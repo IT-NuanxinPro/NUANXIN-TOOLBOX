@@ -1,0 +1,6 @@
+{
+  "name": "暖心工具箱",
+  "description": "一个温暖贴心、功能丰富的开发者辅助工具箱。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

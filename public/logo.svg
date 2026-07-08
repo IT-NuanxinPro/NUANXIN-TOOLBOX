@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="110" fill="#000"/>
+
+  <!-- toolbox body -->
+  <rect x="120" y="190" width="272" height="170" rx="35" fill="#fff"/>
+
+  <!-- toolbox top -->
+  <path d="M165 190 V160 C165 140 180 125 200 125 H312 C332 125 347 140 347 160 V190" fill="none" stroke="#fff" stroke-width="25" stroke-linecap="round"/>
+
+  <!-- toolbox line -->
+  <rect x="120" y="225" width="272" height="18" fill="#000"/>
+
+  <!-- lock -->
+  <rect x="220" y="210" width="72" height="65" rx="12" fill="#000"/>
+
+  <!-- heart -->
+  <path d="M256 255 C230 230 205 250 225 270 L256 300 L287 270 C307 250 282 230 256 255Z" fill="#fff"/>
+
+  <!-- code brackets -->
+  <path d="M190 305 L165 330 L190 355" stroke="#000" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M322 305 L347 330 L322 355" stroke="#000" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- slash -->
+  <path d="M260 305 L235 355" stroke="#000" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- text -->
+  <text x="256" y="430" text-anchor="middle" font-size="46" font-weight="900" font-family="Microsoft YaHei,Arial" fill="#fff">暖心工作箱</text>
+  <text x="256" y="470" text-anchor="middle" font-size="18" letter-spacing="7" font-family="Arial" fill="#aaa">NUANXIN TOOLBOX</text>
+</svg>
