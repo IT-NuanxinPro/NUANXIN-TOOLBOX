@@ -405,7 +405,18 @@ export default function App() {
                     <Icon name="ShieldCheck" className="text-slate-500" size={12} />
                     暖心百宝箱 v1.0
                   </div>
-                  <div>当前北京时间 2026-07-08</div>
+                  <div className="flex items-center justify-between">
+                    <span>当前北京时间 2026-07-08</span>
+                    <a
+                      href="https://github.com/IT-NuanxinPro/NUANXIN-TOOLBOX"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-slate-400 hover:text-slate-900 transition-colors"
+                      title="GitHub 仓库"
+                    >
+                      <Icon name="Github" size={14} />
+                    </a>
+                  </div>
                 </div>
               </div>
             </motion.aside>
