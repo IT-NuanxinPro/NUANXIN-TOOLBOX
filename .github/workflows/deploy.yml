@@ -32,7 +32,10 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          # 关闭 pnpm 供应链策略(minimumReleaseAge),避免拦截新发布的传递依赖
+          npm_config_minimum_release_age: "0"
+        run: pnpm install --frozen-lockfile --config.confirmModulesPurge=false
 
       - name: Build
         run: pnpm build
