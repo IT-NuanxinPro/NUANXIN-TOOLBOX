@@ -56,7 +56,7 @@ export default function App() {
     }
   });
 
-  const [activeToolId, setActiveToolId] = useState<string | null>('svg-converter');
+  const [activeToolId, setActiveToolId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeRole, setActiveRole] = useState<string>('all');
