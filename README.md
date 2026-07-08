@@ -1,20 +1,107 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+
+# 🧰 暖心工作箱
+
+**简约高效的开发辅助百宝箱 · 本地优先 · 数据不落地**
+
 </div>
 
-# Run and deploy your AI Studio app
+一个安全、好用、温暖贴心的开发者百宝箱。所有加密解密、转换解析、网络计算均在浏览器本地沙盒中完成，数据绝不上传服务器，全方位守护您的代码与隐私安全。
 
-This contains everything you need to run your app locally.
+## ✨ 特性
 
-View your app in AI Studio: https://ai.studio/apps/5f4ad4ba-7df1-4aed-a7bf-1a3b1329323f
+- 🔒 **100% 本地运算** —— 所有数据处理均在浏览器中完成，不上传任何敏感信息
+- ⚡ **毫秒级响应** —— 基于 Vite + React 19 构建，启动快、交互流畅
+- 🎨 **精致极简设计** —— Tailwind CSS 驱动的现代界面，专注工具本身
+- 🗂️ **分类清晰** —— 图形视觉、编码转换、文本校验、运维配置四大维度
+- ⭐ **个性化收藏** —— 支持收藏常用工具、记录使用频次与最近访问
 
-## Run Locally
+## 🛠️ 内置工具(共 24 个)
 
-**Prerequisites:**  Node.js
+### 图形与视觉
 
+| 工具                       | 说明                                                 |
+| -------------------------- | ---------------------------------------------------- |
+| SVG 智能转换               | 粘贴 SVG 或上传文件，导出 PNG/JPG/WEBP，可调尺寸倍率 |
+| 色彩转换与 Tailwind 调色板 | HEX/RGB/HSL 双向转换，全阶色调阴影生成               |
+| 二维码生成器               | 自定义链接文本、纠错等级、尺寸颜色，一键保存拷贝     |
+| SVG 占位图智能生成         | 多尺寸 SVG/HTML 占位符，支持定制底色与字色           |
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 编码与转换
+
+| 工具                           | 说明                                                    |
+| ------------------------------ | ------------------------------------------------------- |
+| JSON / YAML 格式化与转换       | 互转、语法校验、自动缩进、一键压缩                      |
+| Base64 编解码                  | 文本编解码 + 图片与 Base64 双向转换                     |
+| 时间戳转换助手                 | Unix 时间戳与北京时间互转，支持秒/毫秒                  |
+| UUID / ULID 批量生成器         | 批量生成 v4 UUID 或单调递增 ULID                        |
+| 哈希、URL 与 HTML 编码助手     | MD5/SHA-1/SHA-256 + URL/HTML 实体转义                   |
+| RSA 密钥生成与测试             | 浏览器本地生成 1024/2048/4096 位密钥对，RSA-OAEP 加解密 |
+| AES 对称加解密                 | AES-128/192/256，CBC/ECB/CTR 多模式                     |
+| JWT 解码与验证调试             | 解析 Header/Payload/Signature，过期时间预警             |
+| URL 编解码 & 参数提取          | Query 字典解析、JSON 转换、双向编辑                     |
+| JSON 结构树 Deep Diff 比对     | 深度比对并树形展示新增/删除/修改路径                    |
+| Git-Style 代码与文件 Diff 对比 | Side-by-Side 双栏与 Inline 单栏高亮比对                 |
+| 高强度随机密码生成             | CSPRNG 批量生成，自动评估复杂度                         |
+
+### 文本与正则校验
+
+| 工具                      | 说明                                  |
+| ------------------------- | ------------------------------------- |
+| 正则表达式测试器          | 实时高亮匹配，内置常用正则模板        |
+| 高级文本处理器 & Markdown | 大小写、去重、排序、Markdown 实时渲染 |
+| Cron 表达式解析器         | 翻译为中文描述，预测未来 5 次触发时间 |
+| User-Agent 分析诊断       | 识别系统、浏览器、引擎、设备类型      |
+
+### 运维与配置
+
+| 工具                             | 说明                                        |
+| -------------------------------- | ------------------------------------------- |
+| Nginx 与 Docker 运维片段         | 反向代理/静态服务/HTTPS 配置 + Compose 模板 |
+| IP 子网掩码与 CIDR 计算器        | 网络号、广播地址、可用主机数计算            |
+| Linux 常用命令与日志 Grep 构造器 | 可视化组装日志检索指令，运维命令速查        |
+| HTTP 状态码极速查询              | 收录常用及生僻状态码 + 优化方案             |
+
+## 🚀 本地开发
+
+**前置要求：** Node.js 20+、pnpm
+
+```bash
+# 安装依赖
+pnpm install
+
+# 启动开发服务器 (默认端口 3000)
+pnpm dev
+
+# 类型检查
+pnpm lint
+
+# 生产构建 (产物输出至 dist/)
+pnpm build
+
+# 预览生产构建
+pnpm preview
+```
+
+## 📦 技术栈
+
+- **框架**：React 19 + TypeScript
+- **构建工具**：Vite 6
+- **样式**：Tailwind CSS 4
+- **动画**：Motion
+- **图标**：lucide-react
+- **包管理**：pnpm
+
+## 🔐 隐私说明
+
+本项目所有工具均为纯客户端实现：
+
+- 不包含任何后端数据上报
+- 不调用外部接口传输用户输入内容
+- 加密、哈希、转换等敏感操作全部在浏览器本地沙盒完成
+
+可放心处理密钥、令牌、配置等敏感数据。
+
+## 📄 许可证
+
+MIT
