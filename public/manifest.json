@@ -1,0 +1,47 @@
+{
+  "name": "暖心工具箱",
+  "short_name": "工具箱",
+  "description": "面向开发者的本地优先工具箱,33+ 个实用工具,纯客户端运算,数据不上传",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "zh-CN",
+  "categories": ["developer", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "JSON / YAML 格式化",
+      "short_name": "JSON",
+      "url": "/#/json-yaml",
+      "description": "JSON 与 YAML 互相转换"
+    },
+    {
+      "name": "SQL 美化",
+      "short_name": "SQL",
+      "url": "/#/sql-formatter",
+      "description": "SQL 格式化与压缩"
+    },
+    {
+      "name": "正则测试器",
+      "short_name": "Regex",
+      "url": "/#/regex",
+      "description": "正则表达式实时测试"
+    },
+    {
+      "name": "代码场",
+      "short_name": "Playground",
+      "url": "/#/code-playground",
+      "description": "HTML/CSS/JS 实时预览"
+    }
+  ]
+}

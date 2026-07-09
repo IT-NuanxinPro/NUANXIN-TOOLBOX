@@ -12,6 +12,10 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    // 防止 React 被打包多份导致 hooks 报错
+    optimizeDeps: {
+      include: ['react', 'react-dom'],
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.

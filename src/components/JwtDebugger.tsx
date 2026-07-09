@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from './Icon';
+import { SendToToolButton } from './SendToToolButton';
 
 interface JwtDebuggerProps {
   onRecordUsage: () => void;
@@ -214,9 +215,12 @@ export const JwtDebugger: React.FC<JwtDebuggerProps> = ({ onRecordUsage }) => {
 
             {/* Payload section */}
             <div className="flex-1 flex flex-col min-h-[180px]">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                PAYLOAD (载荷 - 声明与自定数据)
-              </span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  PAYLOAD (载荷 - 声明与自定数据)
+                </span>
+                {payloadJson && <SendToToolButton data={payloadJson} label="发送到" />}
+              </div>
               <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 font-mono text-xs text-sky-700 font-medium whitespace-pre-wrap overflow-auto flex-1 max-h-[300px]">
                 {payloadJson || '{\n  "sub": "等待输入",\n  "name": "待解析"\n}'}
               </div>

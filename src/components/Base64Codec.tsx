@@ -1,18 +1,29 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from './Icon';
+import { useToolBridge } from '../hooks/useToolBridge';
 import { ToolComponentProps } from '../types';
 
 export const Base64Codec: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
   const [activeTab, setActiveTab] = useState<'text' | 'image'>('text');
-  
+
   // Text Mode state
   const [textInput, setTextInput] = useState<string>('Hello World! 开发者本地工具箱');
   const [textOutput, setTextOutput] = useState<string>('SGVsbG8gV29ybGQhIOW8gOWPkeiAhemDqOmDqOW3peWFt+eusQ==');
   const [textMode, setTextMode] = useState<'encode' | 'decode'>('encode');
   const [textError, setTextError] = useState<string | null>(null);
-  
+
   // Image Mode state
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const { pendingTransfer, consumeTransfer } = useToolBridge();
+
+  // 接收来自其他工具的数据
+  useEffect(() => {
+    if (pendingTransfer) {
+      setTextInput(pendingTransfer.data);
+      setTextMode('encode');
+      consumeTransfer();
+    }
+  }, [pendingTransfer, consumeTransfer]);
   const [imageBase64, setImageBase64] = useState<string>('');
   const [imageError, setImageError] = useState<string | null>(null);
   

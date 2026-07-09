@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
 
@@ -62,6 +62,64 @@ export const RegexTester: React.FC<ToolComponentProps> = ({ onRecordUsage }) => 
   const [regexError, setRegexError] = useState<string | null>(null);
   const [matches, setMatches] = useState<RegExpMatchArray[]>([]);
   const [highlightedElement, setHighlightedElement] = useState<React.ReactNode[]>([]);
+  const [codeLang, setCodeLang] = useState<'js' | 'python' | 'go'>('js');
+  const [isCopied, setIsCopied] = useState(false);
+
+  // 生成各语言代码片段
+  const codeSnippet = useMemo(() => {
+    const escapedPattern = pattern.replace(/'/g, "\\'");
+    const flagStr = getFlagString();
+    if (codeLang === 'js') {
+      return `const regex = /${pattern}/${flagStr};
+const text = ${JSON.stringify(testText.split('\n')[0] || '')};
+
+// 全局匹配
+const matches = [...text.matchAll(regex)];
+console.log(matches.map(m => m[0]));
+// 或单次匹配
+// const result = regex.exec(text);`;
+    }
+    if (codeLang === 'python') {
+      return `import re
+
+pattern = r'${escapedPattern}'
+text = ${JSON.stringify(testText.split('\n')[0] || '')}
+
+# findall: 返回所有匹配
+matches = re.findall(pattern, text${flagStr.includes('i') ? ', re.IGNORECASE' : ''}${flagStr.includes('m') ? ', re.MULTILINE' : ''})
+print(matches)
+
+# finditer: 带位置信息
+for m in re.finditer(pattern, text):
+    print(m.group(), m.start(), m.end())`;
+    }
+    return `package main
+
+import (
+    "fmt"
+    "regexp"
+)
+
+func main() {
+    pattern := \`${pattern}\`
+    text := ${JSON.stringify(testText.split('\n')[0] || '')}
+
+    re := regexp.MustCompile(pattern)
+    matches := re.FindAllString(text, -1)
+    fmt.Println(matches)
+
+    // 带位置
+    locs := re.FindAllStringIndex(text, -1)
+    fmt.Println(locs)
+}`;
+  }, [pattern, flags, testText, codeLang]);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(codeSnippet);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1500);
+    onRecordUsage();
+  };
 
   const handleTemplateClick = (tpl: RegexTemplate) => {
     setPattern(tpl.pattern);
@@ -290,6 +348,43 @@ export const RegexTester: React.FC<ToolComponentProps> = ({ onRecordUsage }) => 
             {/* Simulated terminal with markers */}
             <div className="w-full p-4 bg-slate-950 text-slate-300 font-mono text-xs rounded-xl border border-slate-800 min-h-[120px] whitespace-pre-wrap break-all leading-relaxed">
               {highlightedElement}
+            </div>
+          </div>
+
+          {/* 代码片段生成 */}
+          <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                <Icon name="Code2" size={14} />
+                代码片段生成
+              </span>
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-md">
+                {(['js', 'python', 'go'] as const).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setCodeLang(l)}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded transition-all cursor-pointer ${
+                      codeLang === l ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    {l === 'js' ? 'JavaScript' : l === 'python' ? 'Python' : 'Go'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <pre className="w-full p-4 bg-slate-950 text-emerald-300 font-mono text-xs rounded-xl border border-slate-800 overflow-auto whitespace-pre-wrap break-all leading-relaxed max-h-[240px]">
+                {codeSnippet}
+              </pre>
+              <button
+                onClick={handleCopyCode}
+                className={`absolute top-2 right-2 flex items-center gap-1 font-bold text-[10px] py-1 px-2 rounded-md border transition-all cursor-pointer ${
+                  isCopied ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-white text-slate-700 border-slate-200 shadow-2xs hover:bg-slate-50'
+                }`}
+              >
+                <Icon name={isCopied ? 'Check' : 'Copy'} size={10} />
+                {isCopied ? '已复制' : '复制'}
+              </button>
             </div>
           </div>
 

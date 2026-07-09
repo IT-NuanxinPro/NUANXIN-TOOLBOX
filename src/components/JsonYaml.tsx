@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from './Icon';
+import { SendToToolButton } from './SendToToolButton';
+import { useToolBridge } from '../hooks/useToolBridge';
 import { ToolComponentProps } from '../types';
 
 const DEMO_JSON = `{
@@ -23,6 +25,15 @@ export const JsonYaml: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
   const [indentSize, setIndentSize] = useState<string>('2');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const { pendingTransfer, consumeTransfer } = useToolBridge();
+
+  // 接收来自其他工具的数据
+  useEffect(() => {
+    if (pendingTransfer) {
+      setInputText(pendingTransfer.data);
+      consumeTransfer();
+    }
+  }, [pendingTransfer, consumeTransfer]);
 
   // Very lightweight line-based JSON to YAML converter
   const jsonToYaml = (jsonObj: any, indent = 0): string => {
@@ -270,6 +281,7 @@ export const JsonYaml: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
                 <Icon name={isCopied ? 'Check' : 'Copy'} size={12} />
                 {isCopied ? '已复制' : '复制内容'}
               </button>
+              <SendToToolButton data={inputText} label="发送到" />
             </div>
           </div>
 

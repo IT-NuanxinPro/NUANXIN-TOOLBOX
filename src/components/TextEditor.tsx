@@ -1,6 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import MarkdownIt from 'markdown-it';
+import mermaid from 'mermaid';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
+
+// 初始化 markdown-it,并自定义 mermaid 代码块的 fence 渲染
+const md = new MarkdownIt({ html: false, breaks: true });
+const defaultFence = md.renderer.rules.fence.bind(md.renderer.rules.fence);
+md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+  const token = tokens[idx];
+  if (token.info.trim() === 'mermaid') {
+    // 输出占位 div,后续由 useEffect 异步调用 mermaid.render 替换为 SVG
+    const code = encodeURIComponent(token.content);
+    return `<div class="mermaid-placeholder" data-mermaid-code="${code}"></div>`;
+  }
+  return defaultFence(tokens, idx, options, env, self);
+};
+
+mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+let mermaidSeq = 0;
 
 export const TextEditor: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
   const [text, setText] = useState<string>(
@@ -88,134 +106,31 @@ export const TextEditor: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
     onRecordUsage();
   };
 
-  // Quick HTML-Markdown direct parser
-  const renderMarkdownToHtml = (mdStr: string) => {
-    const escaped = mdStr
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+  const renderedHtml = useMemo(() => md.render(text), [text]);
+  const previewRef = useRef<HTMLDivElement>(null);
 
-    const lines = escaped.split('\n');
-    const result: React.ReactNode[] = [];
-    let insideCodeBlock = false;
-    let codeContent: string[] = [];
+  // 渲染 HTML 后,异步把所有 mermaid 占位替换为 SVG
+  useEffect(() => {
+    const root = previewRef.current;
+    if (!root) return;
+    const placeholders = root.querySelectorAll<HTMLDivElement>('.mermaid-placeholder');
+    if (placeholders.length === 0) return;
 
-    lines.forEach((line, idx) => {
-      // Code Block Detection
-      if (line.trim().startsWith('```')) {
-        if (insideCodeBlock) {
-          // close block
-          insideCodeBlock = false;
-          result.push(
-            <pre key={`code-${idx}`} className="bg-slate-900 text-emerald-400 p-3.5 rounded-md font-mono text-xs overflow-x-auto my-3 border border-slate-800">
-              <code>{codeContent.join('\n')}</code>
-            </pre>
-          );
-          codeContent = [];
-        } else {
-          // open block
-          insideCodeBlock = true;
+    let cancelled = false;
+    placeholders.forEach(async (el) => {
+      const code = decodeURIComponent(el.getAttribute('data-mermaid-code') || '');
+      const id = `mermaid-svg-${mermaidSeq++}`;
+      try {
+        const { svg } = await mermaid.render(id, code);
+        if (!cancelled) el.innerHTML = svg;
+      } catch (err) {
+        if (!cancelled) {
+          el.innerHTML = `<pre style="color:#dc2626;font-size:11px;white-space:pre-wrap">Mermaid 渲染失败:\n${(err as Error).message}</pre>`;
         }
-        return;
       }
-
-      if (insideCodeBlock) {
-        codeContent.push(line);
-        return;
-      }
-
-      // Headers
-      if (line.startsWith('# ')) {
-        result.push(
-          <h1 key={idx} className="text-xl font-extrabold text-slate-900 mt-5 mb-2.5 border-b border-slate-100 pb-1.5 leading-tight">
-            {parseInlineStyles(line.slice(2))}
-          </h1>
-        );
-        return;
-      }
-      if (line.startsWith('## ')) {
-        result.push(
-          <h2 key={idx} className="text-base font-extrabold text-slate-900 mt-4 mb-2 leading-tight">
-            {parseInlineStyles(line.slice(3))}
-          </h2>
-        );
-        return;
-      }
-      if (line.startsWith('### ')) {
-        result.push(
-          <h3 key={idx} className="text-sm font-bold text-slate-800 mt-3 mb-1.5 leading-tight">
-            {parseInlineStyles(line.slice(4))}
-          </h3>
-        );
-        return;
-      }
-
-      // Blockquotes
-      if (line.startsWith('&gt; ') || line.startsWith('> ')) {
-        const cleanQuote = line.startsWith('&gt; ') ? line.slice(5) : line.slice(2);
-        result.push(
-          <blockquote key={idx} className="border-l-4 border-slate-900 bg-slate-50 pl-3.5 py-1.5 my-3 text-slate-600 italic text-xs font-semibold">
-            {parseInlineStyles(cleanQuote)}
-          </blockquote>
-        );
-        return;
-      }
-
-      // Lists
-      if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-        result.push(
-          <li key={idx} className="list-disc ml-5 text-xs text-slate-700 my-1 leading-relaxed">
-            {parseInlineStyles(line.trim().slice(2))}
-          </li>
-        );
-        return;
-      }
-
-      // Empty Lines
-      if (line.trim() === '') {
-        result.push(<div key={idx} className="h-2" />);
-        return;
-      }
-
-      // Regular Paragraphs
-      result.push(
-        <p key={idx} className="text-xs text-slate-700 leading-relaxed my-2">
-          {parseInlineStyles(line)}
-        </p>
-      );
     });
-
-    return result;
-  };
-
-  // Helper to parse bold, italics, inline code, and symbols
-  const parseInlineStyles = (txt: string): React.ReactNode => {
-    // 1. Double asterisks for bold
-    const parts: React.ReactNode[] = [];
-    let cursor = 0;
-    const regex = /\*\*(.*?)\*\*/g;
-    let match;
-
-    while ((match = regex.exec(txt)) !== null) {
-      const matchIdx = match.index;
-      if (matchIdx > cursor) {
-        parts.push(txt.slice(cursor, matchIdx));
-      }
-      parts.push(
-        <strong key={`bold-${matchIdx}`} className="font-extrabold text-slate-950">
-          {match[1]}
-        </strong>
-      );
-      cursor = regex.lastIndex;
-    }
-
-    if (cursor < txt.length) {
-      parts.push(txt.slice(cursor));
-    }
-
-    // Wrap single element back if empty styles matched
-    return parts.length > 0 ? <>{parts}</> : txt;
-  };
+    return () => { cancelled = true; };
+  }, [renderedHtml]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
@@ -349,7 +264,7 @@ export const TextEditor: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
           </div>
 
           {/* Display screen */}
-          <div className="flex-1 min-h-[360px] p-4 rounded-md border border-slate-100 overflow-y-auto max-h-[460px]">
+          <div ref={previewRef} className="flex-1 min-h-[360px] p-4 rounded-md border border-slate-100 overflow-y-auto max-h-[460px]">
             {activeTab === 'raw' ? (
               <pre className="text-xs font-mono text-slate-800 whitespace-pre-wrap break-all leading-relaxed">
                 {text || <span className="text-slate-300 italic font-sans font-semibold">当前没有输入任何文本。</span>}
@@ -357,7 +272,7 @@ export const TextEditor: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
             ) : (
               <div className="prose prose-slate max-w-none">
                 {text.trim() ? (
-                  renderMarkdownToHtml(text)
+                  <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />
                 ) : (
                   <div className="text-slate-300 italic text-xs font-semibold">
                     当前输入为空，无法进行排版预览。

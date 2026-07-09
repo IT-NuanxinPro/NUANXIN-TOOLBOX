@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { TOOL_REGISTRY, CATEGORIES } from './registry';
 import { SVGConverter } from './components/SVGConverter';
@@ -25,10 +25,26 @@ import { PlaceholderGenerator } from './components/PlaceholderGenerator';
 import { CodeDiffEditor } from './components/CodeDiffEditor';
 import { LinuxCommandHelper } from './components/LinuxCommandHelper';
 import { HttpStatusHelper } from './components/HttpStatusHelper';
+import { SqlFormatter } from './components/SqlFormatter';
+import { JsonToTs } from './components/JsonToTs';
+import { CssUnitConverter } from './components/CssUnitConverter';
+import { CurlConverter } from './components/CurlConverter';
+import { CodePlayground } from './components/CodePlayground';
+import { FaviconGenerator } from './components/FaviconGenerator';
+import { HttpRequestTester } from './components/HttpRequestTester';
+import { CssGradientGenerator } from './components/CssGradientGenerator';
+import { CommandPalette } from './components/CommandPalette';
+import { ToolPicker } from './components/ToolPicker';
+import { useTheme } from './hooks/useTheme';
+import { useToolBridge } from './hooks/useToolBridge';
 import { Icon } from './components/Icon';
 import { ToolCategory, UserRole } from './types';
 
 export default function App() {
+  return <AppContent />;
+}
+
+function AppContent() {
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('toolbox_favorites');
@@ -61,6 +77,16 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeRole, setActiveRole] = useState<string>('all');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [cmdkOpen, setCmdkOpen] = useState(false);
+  const { theme, setTheme, toggle } = useTheme();
+  const { sendToTool } = useToolBridge();
+  const [now, setNow] = useState(new Date());
+
+  // 实时更新时间(每秒)
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const mainRef = useRef<HTMLElement>(null);
   const scrollPositionsRef = useRef<Record<string, number>>({});
@@ -84,6 +110,18 @@ export default function App() {
     const savedPosition = scrollPositionsRef.current[key] || 0;
     mainElement.scrollTop = savedPosition;
   }, [activeToolId]);
+
+  // Cmd+K / Ctrl+K 打开命令面板
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCmdkOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   // Sync favorites
   useEffect(() => {
@@ -129,6 +167,13 @@ export default function App() {
   const launchTool = (idStr: string) => {
     changeActiveToolId(idStr);
     handleRecordUsage(idStr);
+  };
+
+  // 从 ToolPicker 选择目标工具后,发送数据并跳转
+  const handlePickerSelect = (targetToolId: string) => {
+    // 数据已经在 ToolBridgeContext 里,目标工具通过 consumeTransfer 获取
+    changeActiveToolId(targetToolId);
+    handleRecordUsage(targetToolId);
   };
 
   // Filter list of tools based on Query and Category
@@ -206,6 +251,22 @@ export default function App() {
         return <LinuxCommandHelper onRecordUsage={() => handleRecordUsage('linux-cmd-helper')} />;
       case 'http-status-helper':
         return <HttpStatusHelper onRecordUsage={() => handleRecordUsage('http-status-helper')} />;
+      case 'sql-formatter':
+        return <SqlFormatter onRecordUsage={() => handleRecordUsage('sql-formatter')} />;
+      case 'json-to-ts':
+        return <JsonToTs onRecordUsage={() => handleRecordUsage('json-to-ts')} />;
+      case 'css-unit-converter':
+        return <CssUnitConverter onRecordUsage={() => handleRecordUsage('css-unit-converter')} />;
+      case 'curl-converter':
+        return <CurlConverter onRecordUsage={() => handleRecordUsage('curl-converter')} />;
+      case 'code-playground':
+        return <CodePlayground onRecordUsage={() => handleRecordUsage('code-playground')} />;
+      case 'favicon-generator':
+        return <FaviconGenerator onRecordUsage={() => handleRecordUsage('favicon-generator')} />;
+      case 'http-request-tester':
+        return <HttpRequestTester onRecordUsage={() => handleRecordUsage('http-request-tester')} />;
+      case 'css-gradient-generator':
+        return <CssGradientGenerator onRecordUsage={() => handleRecordUsage('css-gradient-generator')} />;
       default:
         return (
           <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
@@ -252,7 +313,43 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* 命令面板触发按钮(搜索框样式) */}
+          <button
+            onClick={() => setCmdkOpen(true)}
+            className="flex items-center gap-2.5 px-4 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 border border-slate-200 rounded-lg transition-all cursor-pointer font-semibold min-w-[200px] justify-start"
+            title="打开命令面板 (⌘K)"
+          >
+            <Icon name="Search" size={13} className="text-slate-400" />
+            <span className="flex-1 text-left">搜索工具...</span>
+            <kbd className="text-[9px] bg-white border border-slate-200 px-1.5 py-0.5 rounded font-bold text-slate-400 shrink-0">⌘K</kbd>
+          </button>
+
+          {/* 主题切换 */}
+          <button
+            onClick={toggle}
+            className="p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-md transition-all cursor-pointer border border-transparent hover:border-slate-200"
+            title={theme === 'dark' ? '切换到亮色' : theme === 'light' ? '切换到暗色' : '切换主题'}
+          >
+            <Icon name={theme === 'dark' ? 'Sun' : 'Moon'} size={14} />
+          </button>
+
+          {/* 主题三态切换 */}
+          <div className="hidden md:flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-md">
+            {(['light', 'system', 'dark'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTheme(t)}
+                className={`text-[10px] font-bold px-2 py-1 rounded transition-all cursor-pointer ${
+                  theme === t ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
+                title={t === 'light' ? '亮色' : t === 'dark' ? '暗色' : '跟随系统'}
+              >
+                <Icon name={t === 'light' ? 'Sun' : t === 'dark' ? 'Moon' : 'Monitor'} size={12} />
+              </button>
+            ))}
+          </div>
+
           {activeToolId && (
             <button
               onClick={() => changeActiveToolId(null)}
@@ -365,38 +462,6 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Recently Used History */}
-                  {recents.length > 0 && (
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 block mb-1.5 flex items-center gap-1">
-                        <Icon name="History" className="text-slate-400" size={10} />
-                        最近使用
-                      </span>
-                      <div className="flex flex-col gap-0.5">
-                        {recents.map((recId) => {
-                          const item = TOOL_REGISTRY.find((t) => t.id === recId);
-                          if (!item) return null;
-                          return (
-                            <button
-                              key={recId}
-                              onClick={() => launchTool(recId)}
-                              className={`text-left text-xs px-3 py-1.5 rounded-md font-bold truncate transition-colors cursor-pointer flex items-center justify-between ${
-                                activeToolId === recId
-                                  ? 'bg-slate-100 text-slate-900'
-                                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                              }`}
-                            >
-                              <span className="truncate">{item.title}</span>
-                              <span className="text-[9px] text-slate-400 font-mono">
-                                {usageStats[recId] || 1}次
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
                 </div>
 
                 {/* Sidebar Footer */}
@@ -406,7 +471,7 @@ export default function App() {
                     暖心百宝箱 v1.0
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>当前北京时间 2026-07-08</span>
+                    <span>当前北京时间 {now.toLocaleString('zh-CN', { hour12: false })}</span>
                     <a
                       href="https://github.com/IT-NuanxinPro/NUANXIN-TOOLBOX"
                       target="_blank"
@@ -429,25 +494,35 @@ export default function App() {
           {/* DASHBOARD: GRID DIRECTORY HOME SCREEN */}
           {!activeToolId ? (
             <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
-              
-              {/* Brand Welcome Card (only on 'all' category main screen) */}
+
+              {/* 全部功能标签云 (替代原来的深色欢迎卡片) */}
               {activeCategory === 'all' && (
-                <div className="bg-slate-900 text-white rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 shadow-md border border-slate-950 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none -mr-20 -mt-20"></div>
-                  <img src="/logo.svg" className="h-24 w-24 rounded-2xl shrink-0 shadow-lg border border-white/15" alt="暖心工作箱" referrerPolicy="no-referrer" />
-                  <div className="flex-1 text-center md:text-left">
-                    <h2 className="text-xl md:text-2xl font-black tracking-tight flex items-center justify-center md:justify-start gap-2">
-                      暖心工作箱
-                      <span className="text-[10px] uppercase font-bold tracking-widest bg-white/10 text-white/80 px-2 py-0.5 rounded-full">v1.0</span>
-                    </h2>
-                    <p className="text-xs md:text-sm text-slate-300 mt-2 font-medium max-w-2xl leading-relaxed">
-                      一个安全、好用、温暖贴心的本地优先开发者百宝箱。所有加密解密、转换解析、网络计算均在您的浏览器本地沙盒安全完成，数据绝不上传服务器，全方位守护您的代码与安全隐私。
-                    </p>
-                    <div className="flex flex-wrap gap-2 justify-center md:justify-start mt-4 text-[10px] font-bold text-slate-400">
-                      <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-md flex items-center gap-1">🔒 100% 本地运算</span>
-                      <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-md flex items-center gap-1">⚡ 毫秒级极速响应</span>
-                      <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-md flex items-center gap-1">🎨 精致极简设计</span>
-                    </div>
+                <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                      <Icon name="Sparkles" size={16} />
+                      全部功能
+                    </h3>
+                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                      共 {TOOL_REGISTRY.length} 个工具
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-4 font-semibold">点击任意标签即可跳转到对应工具,所有计算均在浏览器本地完成。</p>
+                  <div className="flex flex-wrap gap-2">
+                    {TOOL_REGISTRY.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => launchTool(item.id)}
+                        className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                          activeToolId === item.id
+                            ? 'bg-slate-900 text-white border-slate-900'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                        }`}
+                      >
+                        <Icon name={item.icon} size={11} className="shrink-0 opacity-60" />
+                        {item.title}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -596,6 +671,19 @@ export default function App() {
 
         </main>
       </div>
+
+      {/* 命令面板 */}
+      <CommandPalette
+        open={cmdkOpen}
+        onClose={() => setCmdkOpen(false)}
+        onSelectTool={launchTool}
+        favorites={favorites}
+        recent={recents}
+        onToggleFavorite={toggleFavorite}
+      />
+
+      {/* 工具间数据传递选择器 */}
+      <ToolPicker currentToolId={activeToolId || undefined} onSelect={handlePickerSelect} />
     </div>
   );
 }
