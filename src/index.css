@@ -77,10 +77,15 @@ html.dark ::-webkit-scrollbar-track { background: #0f172a; }
 html.dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-/* 全局过渡动画 */
-html, body, * {
-  transition-property: background-color, border-color, color;
-  transition-duration: 150ms;
+/* 只给交互元素和显式 transition 类添加色彩过渡,避免整页无差别 transition 造成卡顿 */
+button,
+a,
+input,
+textarea,
+select,
+.transition-colors,
+.transition-all {
+  transition-duration: 120ms;
 }
 
 /* 命令面板动画 */
@@ -153,4 +158,26 @@ html, body, * {
 }
 .btn-press:active {
   transform: scale(0.96);
+}
+
+/* 大厅卡片滚动时延迟渲染视口外内容,提升长列表滚动手感 */
+.tool-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 220px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+
+  .card-hover:hover,
+  .btn-press:active {
+    transform: none;
+  }
 }

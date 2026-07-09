@@ -366,3 +366,7 @@ export const CATEGORY_COUNTS = TOOL_REGISTRY.reduce<Record<string, number>>(
 export function isKnownToolId(id: string | null): id is string {
   return Boolean(id && TOOL_BY_ID.has(id));
 }
+
+export function getCategoryName(categoryId: string) {
+  return CATEGORIES.find((category) => category.id === categoryId)?.name || categoryId;
+}

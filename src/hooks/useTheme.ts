@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark' | 'system';
 const STORAGE_KEY = 'toolbox_theme';
 
 const getSystemTheme = (): 'light' | 'dark' => {
