@@ -39,6 +39,7 @@ const JsonToTs = lazy(() => import('./components/JsonToTs').then(m => ({ default
 const CssUnitConverter = lazy(() => import('./components/CssUnitConverter').then(m => ({ default: m.CssUnitConverter })));
 const CurlConverter = lazy(() => import('./components/CurlConverter').then(m => ({ default: m.CurlConverter })));
 const CodePlayground = lazy(() => import('./components/CodePlayground').then(m => ({ default: m.CodePlayground })));
+const VuePlayground = lazy(() => import('./components/VuePlayground').then(m => ({ default: m.VuePlayground })));
 const FaviconGenerator = lazy(() => import('./components/FaviconGenerator').then(m => ({ default: m.FaviconGenerator })));
 const HttpRequestTester = lazy(() => import('./components/HttpRequestTester').then(m => ({ default: m.HttpRequestTester })));
 const CssGradientGenerator = lazy(() => import('./components/CssGradientGenerator').then(m => ({ default: m.CssGradientGenerator })));
@@ -206,7 +207,8 @@ function AppContent() {
     if (!activeToolId) return null;
 
     return (
-      <Suspense fallback={<ToolSkeleton />}>
+      <div key={activeToolId} className="animate-tool-enter">
+      <Suspense fallback={<ToolSkeleton toolTitle={TOOL_REGISTRY.find(t => t.id === activeToolId)?.title} />}>
         {(() => {
           switch (activeToolId) {
       case 'svg-converter':
@@ -267,6 +269,8 @@ function AppContent() {
         return <CurlConverter onRecordUsage={() => handleRecordUsage('curl-converter')} />;
       case 'code-playground':
         return <CodePlayground onRecordUsage={() => handleRecordUsage('code-playground')} />;
+      case 'vue-playground':
+        return <VuePlayground onRecordUsage={() => handleRecordUsage('vue-playground')} />;
       case 'favicon-generator':
         return <FaviconGenerator onRecordUsage={() => handleRecordUsage('favicon-generator')} />;
       case 'http-request-tester':
@@ -282,6 +286,7 @@ function AppContent() {
     }
         })()}
       </Suspense>
+      </div>
     );
   };
 
@@ -518,15 +523,16 @@ function AppContent() {
                   </div>
                   <p className="text-xs text-slate-500 mb-4 font-semibold">点击任意标签即可跳转到对应工具,所有计算均在浏览器本地完成。</p>
                   <div className="flex flex-wrap gap-2">
-                    {TOOL_REGISTRY.map((item) => (
+                    {TOOL_REGISTRY.map((item, idx) => (
                       <button
                         key={item.id}
                         onClick={() => launchTool(item.id)}
-                        className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                        className={`animate-tag-in btn-press text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                           activeToolId === item.id
                             ? 'bg-slate-900 text-white border-slate-900'
                             : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
                         }`}
+                        style={{ animationDelay: `${Math.min(idx * 10, 300)}ms` }}
                       >
                         <Icon name={item.icon} size={11} className="shrink-0 opacity-60" />
                         {item.title}
@@ -558,13 +564,14 @@ function AppContent() {
               {/* Grid cards */}
               {filteredTools.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredTools.map((tool) => {
+                  {filteredTools.map((tool, idx) => {
                     const isStarred = favorites.includes(tool.id);
                     const count = usageStats[tool.id] || 0;
                     return (
                       <div
                         key={tool.id}
-                        className="bg-white rounded-xl border border-slate-200 p-5 hover:border-black transition-all flex flex-col justify-between group relative shadow-2xs"
+                        className="animate-card-in card-hover bg-white rounded-xl border border-slate-200 p-5 hover:border-black transition-all flex flex-col justify-between group relative shadow-2xs"
+                        style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
                       >
                         {/* Favorite star trigger */}
                         <button
