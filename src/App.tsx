@@ -1,44 +1,47 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { TOOL_REGISTRY, CATEGORIES } from './registry';
-import { SVGConverter } from './components/SVGConverter';
-import { JsonYaml } from './components/JsonYaml';
-import { Base64Codec } from './components/Base64Codec';
-import { TimestampHelper } from './components/TimestampHelper';
-import { UuidGenerator } from './components/UuidGenerator';
-import { RegexTester } from './components/RegexTester';
-import { OpsConfigs } from './components/OpsConfigs';
-import { HashCrypto } from './components/HashCrypto';
-import { TextEditor } from './components/TextEditor';
-import { ColorBox } from './components/ColorBox';
-import { QrCodeGenerator } from './components/QrCodeGenerator';
-import { RsaGenerator } from './components/RsaGenerator';
-import { AesCrypto } from './components/AesCrypto';
-import { JwtDebugger } from './components/JwtDebugger';
-import { UrlCodec } from './components/UrlCodec';
-import { CronParser } from './components/CronParser';
-import { JsonDiff } from './components/JsonDiff';
-import { RandomPassword } from './components/RandomPassword';
-import { SubnetCalculator } from './components/SubnetCalculator';
-import { UserAgentParser } from './components/UserAgentParser';
-import { PlaceholderGenerator } from './components/PlaceholderGenerator';
-import { CodeDiffEditor } from './components/CodeDiffEditor';
-import { LinuxCommandHelper } from './components/LinuxCommandHelper';
-import { HttpStatusHelper } from './components/HttpStatusHelper';
-import { SqlFormatter } from './components/SqlFormatter';
-import { JsonToTs } from './components/JsonToTs';
-import { CssUnitConverter } from './components/CssUnitConverter';
-import { CurlConverter } from './components/CurlConverter';
-import { CodePlayground } from './components/CodePlayground';
-import { FaviconGenerator } from './components/FaviconGenerator';
-import { HttpRequestTester } from './components/HttpRequestTester';
-import { CssGradientGenerator } from './components/CssGradientGenerator';
+import { ToolSkeleton } from './components/ToolSkeleton';
 import { CommandPalette } from './components/CommandPalette';
 import { ToolPicker } from './components/ToolPicker';
 import { useTheme } from './hooks/useTheme';
 import { useToolBridge } from './hooks/useToolBridge';
 import { Icon } from './components/Icon';
 import { ToolCategory, UserRole } from './types';
+
+// 路由懒加载:每个工具独立 chunk,首屏只加载大厅
+const SVGConverter = lazy(() => import('./components/SVGConverter').then(m => ({ default: m.SVGConverter })));
+const JsonYaml = lazy(() => import('./components/JsonYaml').then(m => ({ default: m.JsonYaml })));
+const Base64Codec = lazy(() => import('./components/Base64Codec').then(m => ({ default: m.Base64Codec })));
+const TimestampHelper = lazy(() => import('./components/TimestampHelper').then(m => ({ default: m.TimestampHelper })));
+const UuidGenerator = lazy(() => import('./components/UuidGenerator').then(m => ({ default: m.UuidGenerator })));
+const RegexTester = lazy(() => import('./components/RegexTester').then(m => ({ default: m.RegexTester })));
+const OpsConfigs = lazy(() => import('./components/OpsConfigs').then(m => ({ default: m.OpsConfigs })));
+const HashCrypto = lazy(() => import('./components/HashCrypto').then(m => ({ default: m.HashCrypto })));
+const TextEditor = lazy(() => import('./components/TextEditor').then(m => ({ default: m.TextEditor })));
+const ColorBox = lazy(() => import('./components/ColorBox').then(m => ({ default: m.ColorBox })));
+const QrCodeGenerator = lazy(() => import('./components/QrCodeGenerator').then(m => ({ default: m.QrCodeGenerator })));
+const RsaGenerator = lazy(() => import('./components/RsaGenerator').then(m => ({ default: m.RsaGenerator })));
+const AesCrypto = lazy(() => import('./components/AesCrypto').then(m => ({ default: m.AesCrypto })));
+const JwtDebugger = lazy(() => import('./components/JwtDebugger').then(m => ({ default: m.JwtDebugger })));
+const UrlCodec = lazy(() => import('./components/UrlCodec').then(m => ({ default: m.UrlCodec })));
+const CronParser = lazy(() => import('./components/CronParser').then(m => ({ default: m.CronParser })));
+const JsonDiff = lazy(() => import('./components/JsonDiff').then(m => ({ default: m.JsonDiff })));
+const RandomPassword = lazy(() => import('./components/RandomPassword').then(m => ({ default: m.RandomPassword })));
+const SubnetCalculator = lazy(() => import('./components/SubnetCalculator').then(m => ({ default: m.SubnetCalculator })));
+const UserAgentParser = lazy(() => import('./components/UserAgentParser').then(m => ({ default: m.UserAgentParser })));
+const PlaceholderGenerator = lazy(() => import('./components/PlaceholderGenerator').then(m => ({ default: m.PlaceholderGenerator })));
+const CodeDiffEditor = lazy(() => import('./components/CodeDiffEditor').then(m => ({ default: m.CodeDiffEditor })));
+const LinuxCommandHelper = lazy(() => import('./components/LinuxCommandHelper').then(m => ({ default: m.LinuxCommandHelper })));
+const HttpStatusHelper = lazy(() => import('./components/HttpStatusHelper').then(m => ({ default: m.HttpStatusHelper })));
+const SqlFormatter = lazy(() => import('./components/SqlFormatter').then(m => ({ default: m.SqlFormatter })));
+const JsonToTs = lazy(() => import('./components/JsonToTs').then(m => ({ default: m.JsonToTs })));
+const CssUnitConverter = lazy(() => import('./components/CssUnitConverter').then(m => ({ default: m.CssUnitConverter })));
+const CurlConverter = lazy(() => import('./components/CurlConverter').then(m => ({ default: m.CurlConverter })));
+const CodePlayground = lazy(() => import('./components/CodePlayground').then(m => ({ default: m.CodePlayground })));
+const FaviconGenerator = lazy(() => import('./components/FaviconGenerator').then(m => ({ default: m.FaviconGenerator })));
+const HttpRequestTester = lazy(() => import('./components/HttpRequestTester').then(m => ({ default: m.HttpRequestTester })));
+const CssGradientGenerator = lazy(() => import('./components/CssGradientGenerator').then(m => ({ default: m.CssGradientGenerator })));
 
 export default function App() {
   return <AppContent />;
@@ -201,8 +204,11 @@ function AppContent() {
   // Render proper tool screen
   const renderToolScreen = () => {
     if (!activeToolId) return null;
-    
-    switch (activeToolId) {
+
+    return (
+      <Suspense fallback={<ToolSkeleton />}>
+        {(() => {
+          switch (activeToolId) {
       case 'svg-converter':
         return <SVGConverter onRecordUsage={() => handleRecordUsage('svg-converter')} />;
       case 'json-yaml':
@@ -274,6 +280,9 @@ function AppContent() {
           </div>
         );
     }
+        })()}
+      </Suspense>
+    );
   };
 
   return (
