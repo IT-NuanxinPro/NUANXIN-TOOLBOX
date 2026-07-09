@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Icon } from './Icon';
 import { TOOL_REGISTRY, CATEGORIES } from '../registry';
 import { ToolRegistryItem } from '../types';

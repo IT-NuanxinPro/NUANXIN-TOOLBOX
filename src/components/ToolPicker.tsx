@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Icon } from './Icon';
 import { TOOL_REGISTRY } from '../registry';
 import { toolBridge } from '../contexts/ToolBridgeContext';
