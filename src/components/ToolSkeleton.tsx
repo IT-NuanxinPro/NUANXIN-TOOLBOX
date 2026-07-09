@@ -4,9 +4,9 @@ export const ToolSkeleton: React.FC<{ toolTitle?: string }> = ({ toolTitle }) =>
   return (
     <div className="flex flex-col gap-4">
       {/* 顶部加载提示 */}
-      <div className="flex items-center justify-center gap-2.5 py-3 px-4 bg-indigo-50/60 border border-indigo-100 rounded-lg">
-        <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin-slow"></div>
-        <span className="text-xs font-bold text-indigo-700">
+      <div className="flex items-center justify-center gap-2.5 py-3 px-4 bg-slate-50 border border-slate-200 rounded-lg">
+        <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin-slow"></div>
+        <span className="text-xs font-bold text-slate-700">
           正在加载{toolTitle ? `「${toolTitle}」` : '工具'}...
         </span>
       </div>
