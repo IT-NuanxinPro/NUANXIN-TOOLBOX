@@ -352,3 +352,17 @@ export const TOOL_REGISTRY: ToolRegistryItem[] = [
     icon: 'Globe',
   }
 ];
+
+export const TOOL_BY_ID = new Map(TOOL_REGISTRY.map((tool) => [tool.id, tool]));
+
+export const CATEGORY_COUNTS = TOOL_REGISTRY.reduce<Record<string, number>>(
+  (counts, tool) => {
+    counts[tool.category] = (counts[tool.category] || 0) + 1;
+    return counts;
+  },
+  { all: TOOL_REGISTRY.length }
+);
+
+export function isKnownToolId(id: string | null): id is string {
+  return Boolean(id && TOOL_BY_ID.has(id));
+}

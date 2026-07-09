@@ -1,7 +1,6 @@
-# 静态资源(已存在)直接命中,无需 fallback
-# 关键:不存在的 .js/.css 等静态资源不要 fallback 到 index.html
-# 否则浏览器会收到 text/html 的响应,导致 MIME 不匹配 → 白屏
-/assets/*  /assets/:splat  200
+# 已存在的静态资源会优先直接命中;缺失的哈希资源必须 404
+# 否则 SPA fallback 会返回 index.html,浏览器就会因 MIME=text/html 拒绝加载 CSS/JS
+/assets/*  /404.html  404
 
 # 其余所有路由 fallback 到 index.html(SPA 标准行为)
 /*  /index.html  200

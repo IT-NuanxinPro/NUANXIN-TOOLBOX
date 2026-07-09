@@ -1,109 +1,80 @@
-import { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TOOL_REGISTRY, CATEGORIES } from './registry';
-import { ToolSkeleton } from './components/ToolSkeleton';
+import { TOOL_REGISTRY, CATEGORIES, CATEGORY_COUNTS, TOOL_BY_ID, isKnownToolId } from './registry';
 import { CommandPalette } from './components/CommandPalette';
 import { ToolPicker } from './components/ToolPicker';
 import { useTheme } from './hooks/useTheme';
-import { useToolBridge } from './hooks/useToolBridge';
+import { usePersistentState } from './hooks/usePersistentState';
 import { Icon } from './components/Icon';
-import { ToolCategory, UserRole } from './types';
+import { ToolScreen } from './toolComponents';
+import { ToolCategory } from './types';
 
-// 路由懒加载:每个工具独立 chunk,首屏只加载大厅
-const SVGConverter = lazy(() => import('./components/SVGConverter').then(m => ({ default: m.SVGConverter })));
-const JsonYaml = lazy(() => import('./components/JsonYaml').then(m => ({ default: m.JsonYaml })));
-const Base64Codec = lazy(() => import('./components/Base64Codec').then(m => ({ default: m.Base64Codec })));
-const TimestampHelper = lazy(() => import('./components/TimestampHelper').then(m => ({ default: m.TimestampHelper })));
-const UuidGenerator = lazy(() => import('./components/UuidGenerator').then(m => ({ default: m.UuidGenerator })));
-const RegexTester = lazy(() => import('./components/RegexTester').then(m => ({ default: m.RegexTester })));
-const OpsConfigs = lazy(() => import('./components/OpsConfigs').then(m => ({ default: m.OpsConfigs })));
-const HashCrypto = lazy(() => import('./components/HashCrypto').then(m => ({ default: m.HashCrypto })));
-const TextEditor = lazy(() => import('./components/TextEditor').then(m => ({ default: m.TextEditor })));
-const ColorBox = lazy(() => import('./components/ColorBox').then(m => ({ default: m.ColorBox })));
-const QrCodeGenerator = lazy(() => import('./components/QrCodeGenerator').then(m => ({ default: m.QrCodeGenerator })));
-const RsaGenerator = lazy(() => import('./components/RsaGenerator').then(m => ({ default: m.RsaGenerator })));
-const AesCrypto = lazy(() => import('./components/AesCrypto').then(m => ({ default: m.AesCrypto })));
-const JwtDebugger = lazy(() => import('./components/JwtDebugger').then(m => ({ default: m.JwtDebugger })));
-const UrlCodec = lazy(() => import('./components/UrlCodec').then(m => ({ default: m.UrlCodec })));
-const CronParser = lazy(() => import('./components/CronParser').then(m => ({ default: m.CronParser })));
-const JsonDiff = lazy(() => import('./components/JsonDiff').then(m => ({ default: m.JsonDiff })));
-const RandomPassword = lazy(() => import('./components/RandomPassword').then(m => ({ default: m.RandomPassword })));
-const SubnetCalculator = lazy(() => import('./components/SubnetCalculator').then(m => ({ default: m.SubnetCalculator })));
-const UserAgentParser = lazy(() => import('./components/UserAgentParser').then(m => ({ default: m.UserAgentParser })));
-const PlaceholderGenerator = lazy(() => import('./components/PlaceholderGenerator').then(m => ({ default: m.PlaceholderGenerator })));
-const CodeDiffEditor = lazy(() => import('./components/CodeDiffEditor').then(m => ({ default: m.CodeDiffEditor })));
-const LinuxCommandHelper = lazy(() => import('./components/LinuxCommandHelper').then(m => ({ default: m.LinuxCommandHelper })));
-const HttpStatusHelper = lazy(() => import('./components/HttpStatusHelper').then(m => ({ default: m.HttpStatusHelper })));
-const SqlFormatter = lazy(() => import('./components/SqlFormatter').then(m => ({ default: m.SqlFormatter })));
-const JsonToTs = lazy(() => import('./components/JsonToTs').then(m => ({ default: m.JsonToTs })));
-const CssUnitConverter = lazy(() => import('./components/CssUnitConverter').then(m => ({ default: m.CssUnitConverter })));
-const CurlConverter = lazy(() => import('./components/CurlConverter').then(m => ({ default: m.CurlConverter })));
-const CodePlayground = lazy(() => import('./components/CodePlayground').then(m => ({ default: m.CodePlayground })));
-const VuePlayground = lazy(() => import('./components/VuePlayground').then(m => ({ default: m.VuePlayground })));
-const FaviconGenerator = lazy(() => import('./components/FaviconGenerator').then(m => ({ default: m.FaviconGenerator })));
-const HttpRequestTester = lazy(() => import('./components/HttpRequestTester').then(m => ({ default: m.HttpRequestTester })));
-const CssGradientGenerator = lazy(() => import('./components/CssGradientGenerator').then(m => ({ default: m.CssGradientGenerator })));
+const getToolIdFromHash = () => {
+  if (typeof window === 'undefined') return null;
+  const id = window.location.hash.replace(/^#\/?/, '').trim();
+  return isKnownToolId(id) ? id : null;
+};
 
 export default function App() {
   return <AppContent />;
 }
 
+function SidebarClock() {
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return <span>当前北京时间 {now.toLocaleString('zh-CN', { hour12: false })}</span>;
+}
+
 function AppContent() {
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('toolbox_favorites');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [favorites, setFavorites] = usePersistentState<string[]>('toolbox_favorites', []);
+  const [recents, setRecents] = usePersistentState<string[]>('toolbox_recents', []);
+  const [usageStats, setUsageStats] = usePersistentState<Record<string, number>>('toolbox_usage_stats', {});
 
-  const [recents, setRecents] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('toolbox_recents');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [usageStats, setUsageStats] = useState<Record<string, number>>(() => {
-    try {
-      const saved = localStorage.getItem('toolbox_usage_stats');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const [activeToolId, setActiveToolId] = useState<string | null>(null);
+  const [activeToolId, setActiveToolId] = useState<string | null>(() => getToolIdFromHash());
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [activeRole, setActiveRole] = useState<string>('all');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [cmdkOpen, setCmdkOpen] = useState(false);
   const { theme, setTheme, toggle } = useTheme();
-  const { sendToTool } = useToolBridge();
-  const [now, setNow] = useState(new Date());
-
-  // 实时更新时间(每秒)
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
 
   const mainRef = useRef<HTMLElement>(null);
   const scrollPositionsRef = useRef<Record<string, number>>({});
 
-  // Change activeToolId while safely preserving the precise scroll position BEFORE state updates and DOM mutations
-  const changeActiveToolId = (newId: string | null) => {
+  const syncToolHash = useCallback((newId: string | null) => {
+    if (typeof window === 'undefined') return;
+
+    const nextHash = newId ? `#/${newId}` : '';
+    if (window.location.hash !== nextHash) {
+      const nextUrl = newId ? nextHash : `${window.location.pathname}${window.location.search}`;
+      window.history.pushState(null, '', nextUrl);
+    }
+  }, []);
+
+  // 切换工具前先保存滚动位置,避免大厅与工具页来回跳转时丢失上下文
+  const changeActiveToolId = useCallback((newId: string | null, shouldSyncHash = true) => {
     const mainElement = mainRef.current;
     if (mainElement) {
       const currentKey = activeToolId || 'lobby';
       scrollPositionsRef.current[currentKey] = mainElement.scrollTop;
     }
     setActiveToolId(newId);
-  };
+    if (shouldSyncHash) syncToolHash(newId);
+  }, [activeToolId, syncToolHash]);
+
+  useEffect(() => {
+    const handleRouteChange = () => changeActiveToolId(getToolIdFromHash(), false);
+    window.addEventListener('hashchange', handleRouteChange);
+    window.addEventListener('popstate', handleRouteChange);
+    return () => {
+      window.removeEventListener('hashchange', handleRouteChange);
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, [changeActiveToolId]);
 
   // LayoutEffect to restore scroll positions when activeToolId changes
   useLayoutEffect(() => {
@@ -127,23 +98,8 @@ function AppContent() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Sync favorites
-  useEffect(() => {
-    localStorage.setItem('toolbox_favorites', JSON.stringify(favorites));
-  }, [favorites]);
-
-  // Sync recents
-  useEffect(() => {
-    localStorage.setItem('toolbox_recents', JSON.stringify(recents));
-  }, [recents]);
-
-  // Sync usage stats
-  useEffect(() => {
-    localStorage.setItem('toolbox_usage_stats', JSON.stringify(usageStats));
-  }, [usageStats]);
-
   // Handle Recording of Tool Usage
-  const handleRecordUsage = (idStr?: string) => {
+  const handleRecordUsage = useCallback((idStr?: string) => {
     const targetId = idStr || activeToolId;
     if (!targetId) return;
 
@@ -158,40 +114,42 @@ function AppContent() {
       ...prev,
       [targetId]: (prev[targetId] || 0) + 1,
     }));
-  };
+  }, [activeToolId, setRecents, setUsageStats]);
 
   // Star / Favorite toggle
-  const toggleFavorite = (idStr: string) => {
+  const toggleFavorite = useCallback((idStr: string) => {
     setFavorites((prev) =>
       prev.includes(idStr) ? prev.filter((id) => id !== idStr) : [...prev, idStr]
     );
-  };
+  }, [setFavorites]);
 
   // Launch tool from clicking
-  const launchTool = (idStr: string) => {
+  const launchTool = useCallback((idStr: string) => {
     changeActiveToolId(idStr);
     handleRecordUsage(idStr);
-  };
+  }, [changeActiveToolId, handleRecordUsage]);
 
   // 从 ToolPicker 选择目标工具后,发送数据并跳转
-  const handlePickerSelect = (targetToolId: string) => {
+  const handlePickerSelect = useCallback((targetToolId: string) => {
     // 数据已经在 ToolBridgeContext 里,目标工具通过 consumeTransfer 获取
     changeActiveToolId(targetToolId);
     handleRecordUsage(targetToolId);
-  };
+  }, [changeActiveToolId, handleRecordUsage]);
 
-  // Filter list of tools based on Query and Category
-  const filteredTools = TOOL_REGISTRY.filter((tool) => {
-    const matchesSearch =
-      searchQuery.trim() === '' ||
-      tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tool.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tool.keywords.some((k) => k.toLowerCase().includes(searchQuery.toLowerCase()));
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredTools = useMemo(() => {
+    return TOOL_REGISTRY.filter((tool) => {
+      const matchesSearch =
+        normalizedSearch === '' ||
+        tool.title.toLowerCase().includes(normalizedSearch) ||
+        tool.description.toLowerCase().includes(normalizedSearch) ||
+        tool.keywords.some((k) => k.toLowerCase().includes(normalizedSearch));
 
-    const matchesCategory = activeCategory === 'all' || tool.category === activeCategory;
+      const matchesCategory = activeCategory === 'all' || tool.category === activeCategory;
 
-    return matchesSearch && matchesCategory;
-  });
+      return matchesSearch && matchesCategory;
+    });
+  }, [activeCategory, normalizedSearch]);
 
   // Map Category IDs to Names
   const getCategoryName = (catId: ToolCategory) => {
@@ -200,95 +158,7 @@ function AppContent() {
   };
 
   // Current active tool item
-  const activeToolItem = TOOL_REGISTRY.find((t) => t.id === activeToolId);
-
-  // Render proper tool screen
-  const renderToolScreen = () => {
-    if (!activeToolId) return null;
-
-    return (
-      <div key={activeToolId} className="animate-tool-enter">
-      <Suspense fallback={<ToolSkeleton toolTitle={TOOL_REGISTRY.find(t => t.id === activeToolId)?.title} />}>
-        {(() => {
-          switch (activeToolId) {
-      case 'svg-converter':
-        return <SVGConverter onRecordUsage={() => handleRecordUsage('svg-converter')} />;
-      case 'json-yaml':
-        return <JsonYaml onRecordUsage={() => handleRecordUsage('json-yaml')} />;
-      case 'base64':
-        return <Base64Codec onRecordUsage={() => handleRecordUsage('base64')} />;
-      case 'timestamp':
-        return <TimestampHelper onRecordUsage={() => handleRecordUsage('timestamp')} />;
-      case 'uuid-gen':
-        return <UuidGenerator onRecordUsage={() => handleRecordUsage('uuid-gen')} />;
-      case 'regex':
-        return <RegexTester onRecordUsage={() => handleRecordUsage('regex')} />;
-      case 'ops-configs':
-        return <OpsConfigs onRecordUsage={() => handleRecordUsage('ops-configs')} />;
-      case 'hash-crypto':
-        return <HashCrypto onRecordUsage={() => handleRecordUsage('hash-crypto')} />;
-      case 'text-editor':
-        return <TextEditor onRecordUsage={() => handleRecordUsage('text-editor')} />;
-      case 'color-box':
-        return <ColorBox onRecordUsage={() => handleRecordUsage('color-box')} />;
-      case 'qrcode-gen':
-        return <QrCodeGenerator onRecordUsage={() => handleRecordUsage('qrcode-gen')} />;
-      case 'rsa-generator':
-        return <RsaGenerator onRecordUsage={() => handleRecordUsage('rsa-generator')} />;
-      case 'aes-crypto':
-        return <AesCrypto onRecordUsage={() => handleRecordUsage('aes-crypto')} />;
-      case 'jwt-debugger':
-        return <JwtDebugger onRecordUsage={() => handleRecordUsage('jwt-debugger')} />;
-      case 'url-codec':
-        return <UrlCodec onRecordUsage={() => handleRecordUsage('url-codec')} />;
-      case 'cron-parser':
-        return <CronParser onRecordUsage={() => handleRecordUsage('cron-parser')} />;
-      case 'json-diff':
-        return <JsonDiff onRecordUsage={() => handleRecordUsage('json-diff')} />;
-      case 'random-password':
-        return <RandomPassword onRecordUsage={() => handleRecordUsage('random-password')} />;
-      case 'subnet-calculator':
-        return <SubnetCalculator onRecordUsage={() => handleRecordUsage('subnet-calculator')} />;
-      case 'user-agent':
-        return <UserAgentParser onRecordUsage={() => handleRecordUsage('user-agent')} />;
-      case 'image-placeholder':
-        return <PlaceholderGenerator onRecordUsage={() => handleRecordUsage('image-placeholder')} />;
-      case 'code-diff':
-        return <CodeDiffEditor onRecordUsage={() => handleRecordUsage('code-diff')} />;
-      case 'linux-cmd-helper':
-        return <LinuxCommandHelper onRecordUsage={() => handleRecordUsage('linux-cmd-helper')} />;
-      case 'http-status-helper':
-        return <HttpStatusHelper onRecordUsage={() => handleRecordUsage('http-status-helper')} />;
-      case 'sql-formatter':
-        return <SqlFormatter onRecordUsage={() => handleRecordUsage('sql-formatter')} />;
-      case 'json-to-ts':
-        return <JsonToTs onRecordUsage={() => handleRecordUsage('json-to-ts')} />;
-      case 'css-unit-converter':
-        return <CssUnitConverter onRecordUsage={() => handleRecordUsage('css-unit-converter')} />;
-      case 'curl-converter':
-        return <CurlConverter onRecordUsage={() => handleRecordUsage('curl-converter')} />;
-      case 'code-playground':
-        return <CodePlayground onRecordUsage={() => handleRecordUsage('code-playground')} />;
-      case 'vue-playground':
-        return <VuePlayground onRecordUsage={() => handleRecordUsage('vue-playground')} />;
-      case 'favicon-generator':
-        return <FaviconGenerator onRecordUsage={() => handleRecordUsage('favicon-generator')} />;
-      case 'http-request-tester':
-        return <HttpRequestTester onRecordUsage={() => handleRecordUsage('http-request-tester')} />;
-      case 'css-gradient-generator':
-        return <CssGradientGenerator onRecordUsage={() => handleRecordUsage('css-gradient-generator')} />;
-      default:
-        return (
-          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
-            该小工具正在紧急研发中，敬请期待！
-          </div>
-        );
-    }
-        })()}
-      </Suspense>
-      </div>
-    );
-  };
+  const activeToolItem = activeToolId ? TOOL_BY_ID.get(activeToolId) : undefined;
 
   return (
     <div className="h-screen bg-white flex flex-col font-sans text-slate-900 selection:bg-slate-200 antialiased overflow-hidden">
@@ -417,9 +287,7 @@ function AppContent() {
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 block mb-1.5">工具分类</span>
                     <nav className="flex flex-col gap-0.5">
                       {CATEGORIES.map((cat) => {
-                        const count = cat.id === 'all' 
-                          ? TOOL_REGISTRY.length 
-                          : TOOL_REGISTRY.filter((t) => t.category === cat.id).length;
+                        const count = CATEGORY_COUNTS[cat.id] || 0;
 
                         return (
                           <button
@@ -485,7 +353,7 @@ function AppContent() {
                     暖心百宝箱 v1.0
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>当前北京时间 {now.toLocaleString('zh-CN', { hour12: false })}</span>
+                    <SidebarClock />
                     <a
                       href="https://github.com/IT-NuanxinPro/NUANXIN-TOOLBOX"
                       target="_blank"
@@ -679,7 +547,13 @@ function AppContent() {
 
               {/* Tool Screen Mounting */}
               <div className="flex-1">
-                {renderToolScreen()}
+                {activeToolId && (
+                  <ToolScreen
+                    toolId={activeToolId}
+                    toolTitle={activeToolItem?.title}
+                    onRecordUsage={handleRecordUsage}
+                  />
+                )}
               </div>
 
             </div>

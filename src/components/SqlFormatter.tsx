@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { format } from 'sql-formatter';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
 
@@ -17,6 +16,8 @@ const DIALECT_OPTIONS: { value: Dialect; label: string }[] = [
   { value: 'bigquery', label: 'BigQuery' },
 ];
 
+const loadSqlFormatter = () => import('sql-formatter').then((module) => module.format);
+
 export const SqlFormatter: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
   const [input, setInput] = useState<string>(DEMO_SQL);
   const [output, setOutput] = useState<string>('');
@@ -25,14 +26,17 @@ export const SqlFormatter: React.FC<ToolComponentProps> = ({ onRecordUsage }) =>
   const [keywordCase, setKeywordCase] = useState<'upper' | 'lower' | 'preserve'>('upper');
   const [error, setError] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [processingAction, setProcessingAction] = useState<'format' | 'compress' | null>(null);
 
-  const handleFormat = () => {
+  const handleFormat = async () => {
     if (!input.trim()) {
       setError('请输入 SQL 语句');
       setOutput('');
       return;
     }
     try {
+      setProcessingAction('format');
+      const format = await loadSqlFormatter();
       const formatted = format(input, {
         language: dialect as any,
         tabWidth: indent === 'tab' ? 1 : parseInt(indent),
@@ -45,15 +49,19 @@ export const SqlFormatter: React.FC<ToolComponentProps> = ({ onRecordUsage }) =>
     } catch (err: any) {
       setError(`SQL 解析失败:${err.message}`);
       setOutput('');
+    } finally {
+      setProcessingAction(null);
     }
   };
 
-  const handleCompress = () => {
+  const handleCompress = async () => {
     if (!input.trim()) {
       setError('请输入 SQL 语句');
       return;
     }
     try {
+      setProcessingAction('compress');
+      const format = await loadSqlFormatter();
       const compressed = format(input, {
         language: dialect as any,
         tabWidth: 0,
@@ -64,6 +72,8 @@ export const SqlFormatter: React.FC<ToolComponentProps> = ({ onRecordUsage }) =>
       onRecordUsage();
     } catch (err: any) {
       setError(`SQL 解析失败:${err.message}`);
+    } finally {
+      setProcessingAction(null);
     }
   };
 
@@ -77,8 +87,8 @@ export const SqlFormatter: React.FC<ToolComponentProps> = ({ onRecordUsage }) =>
 
   // SQL 关键字高亮
   const highlightSql = (sql: string) => {
-    const keywords = /\b(SELECT|FROM|WHERE|AND|OR|LEFT|RIGHT|INNER|OUTER|JOIN|ON|GROUP|BY|HAVING|ORDER|LIMIT|OFFSET|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|DROP|ALTER|ADD|AS|DISTINCT|UNION|ALL|CASE|WHEN|THEN|ELSE|END|IN|NOT|NULL|IS|LIKE|BETWEEN|EXISTS|COUNT|SUM|AVG|MIN|MAX|WITH|RECURSIVE)\b/gi;
-    const functions = /\b(COUNT|SUM|AVG|MIN|MAX|NOW|DATE|COALESCE|CAST|CONCAT|LENGTH|LOWER|UPPER|TRIM|ROUND|ABS)\b/gi;
+    const keywords = /\b(SELECT|FROM|WHERE|AND|OR|LEFT|RIGHT|INNER|OUTER|JOIN|ON|GROUP|BY|HAVING|ORDER|LIMIT|OFFSET|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|DROP|ALTER|ADD|AS|DISTINCT|UNION|ALL|CASE|WHEN|THEN|ELSE|END|IN|NOT|NULL|IS|LIKE|BETWEEN|EXISTS|COUNT|SUM|AVG|MIN|MAX|WITH|RECURSIVE)\b/i;
+    const functions = /\b(COUNT|SUM|AVG|MIN|MAX|NOW|DATE|COALESCE|CAST|CONCAT|LENGTH|LOWER|UPPER|TRIM|ROUND|ABS)\b/i;
     const parts = sql.split(/(\s+|[(),;])/);
     return parts.map((part, i) => {
       if (keywords.test(part)) {
@@ -149,17 +159,19 @@ export const SqlFormatter: React.FC<ToolComponentProps> = ({ onRecordUsage }) =>
           <div className="flex flex-col gap-2 mt-2">
             <button
               onClick={handleFormat}
-              className="w-full cursor-pointer bg-slate-900 hover:bg-slate-950 text-white text-xs font-bold py-2.5 px-4 rounded-md transition-all flex items-center justify-center gap-1.5 shadow-xs"
+              disabled={processingAction !== null}
+              className="w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 bg-slate-900 hover:bg-slate-950 text-white text-xs font-bold py-2.5 px-4 rounded-md transition-all flex items-center justify-center gap-1.5 shadow-xs"
             >
-              <Icon name="Wand2" size={14} />
-              格式化 SQL
+              <Icon name={processingAction === 'format' ? 'Loader2' : 'Wand2'} size={14} className={processingAction === 'format' ? 'animate-spin' : ''} />
+              {processingAction === 'format' ? '格式化中...' : '格式化 SQL'}
             </button>
             <button
               onClick={handleCompress}
-              className="w-full cursor-pointer bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold py-2.5 px-4 rounded-md transition-all flex items-center justify-center gap-1.5"
+              disabled={processingAction !== null}
+              className="w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold py-2.5 px-4 rounded-md transition-all flex items-center justify-center gap-1.5"
             >
-              <Icon name="Minimize2" size={14} />
-              压缩成单行
+              <Icon name={processingAction === 'compress' ? 'Loader2' : 'Minimize2'} size={14} className={processingAction === 'compress' ? 'animate-spin' : ''} />
+              {processingAction === 'compress' ? '压缩中...' : '压缩成单行'}
             </button>
           </div>
 

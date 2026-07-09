@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import MarkdownIt from 'markdown-it';
-import mermaid from 'mermaid';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
 
@@ -17,8 +16,18 @@ md.renderer.rules.fence = (tokens, idx, options, env, self) => {
   return defaultFence(tokens, idx, options, env, self);
 };
 
-mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+let mermaidModule: Promise<typeof import('mermaid')['default']> | null = null;
 let mermaidSeq = 0;
+
+const loadMermaid = async () => {
+  if (!mermaidModule) {
+    mermaidModule = import('mermaid').then(({ default: mermaid }) => {
+      mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+      return mermaid;
+    });
+  }
+  return mermaidModule;
+};
 
 export const TextEditor: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
   const [text, setText] = useState<string>(
@@ -117,17 +126,24 @@ export const TextEditor: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
     if (placeholders.length === 0) return;
 
     let cancelled = false;
-    placeholders.forEach(async (el) => {
-      const code = decodeURIComponent(el.getAttribute('data-mermaid-code') || '');
-      const id = `mermaid-svg-${mermaidSeq++}`;
-      try {
-        const { svg } = await mermaid.render(id, code);
-        if (!cancelled) el.innerHTML = svg;
-      } catch (err) {
-        if (!cancelled) {
-          el.innerHTML = `<pre style="color:#dc2626;font-size:11px;white-space:pre-wrap">Mermaid 渲染失败:\n${(err as Error).message}</pre>`;
+    loadMermaid().then((mermaid) => {
+      placeholders.forEach(async (el) => {
+        const code = decodeURIComponent(el.getAttribute('data-mermaid-code') || '');
+        const id = `mermaid-svg-${mermaidSeq++}`;
+        try {
+          const { svg } = await mermaid.render(id, code);
+          if (!cancelled) el.innerHTML = svg;
+        } catch (err) {
+          if (!cancelled) {
+            const pre = document.createElement('pre');
+            pre.style.color = '#dc2626';
+            pre.style.fontSize = '11px';
+            pre.style.whiteSpace = 'pre-wrap';
+            pre.textContent = `Mermaid 渲染失败:\n${(err as Error).message}`;
+            el.replaceChildren(pre);
+          }
         }
-      }
+      });
     });
     return () => { cancelled = true; };
   }, [renderedHtml]);
