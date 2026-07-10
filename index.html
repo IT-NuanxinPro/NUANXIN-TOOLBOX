@@ -7,6 +7,7 @@
     <link rel="apple-touch-icon" href="/logo.svg" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0f172a" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="description" content="面向开发者的本地优先工具箱,33+ 个实用工具:JSON/YAML 转换、SQL 美化、Base64 编解码、正则测试、JWT 调试、RSA/AES 加解密、HTTP 请求测试、代码场等,纯客户端运算,数据不上传。" />
     <meta name="keywords" content="开发者工具,JSON格式化,SQL美化,Base64,正则表达式,JWT解码,UUID生成,时间戳转换,HTTP测试,代码场,PWA" />
     <meta name="author" content="暖心工作箱" />
@@ -30,6 +31,43 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="暖心工具箱" />
+
+    <script>
+      (() => {
+        const recoveryKey = 'toolbox_asset_recovery_v1';
+
+        window.addEventListener('error', (event) => {
+          const target = event.target;
+          const assetUrl = target?.href || target?.src;
+          const lastRecoveryAt = Number(sessionStorage.getItem(recoveryKey) || 0);
+          if (!assetUrl || Date.now() - lastRecoveryAt < 60_000) return;
+
+          const url = new URL(assetUrl, window.location.href);
+          if (url.origin !== window.location.origin || !url.pathname.startsWith('/assets/')) return;
+
+          sessionStorage.setItem(recoveryKey, String(Date.now()));
+          const cleanupTasks = [];
+
+          if ('serviceWorker' in navigator) {
+            cleanupTasks.push(
+              navigator.serviceWorker.getRegistrations().then((registrations) =>
+                Promise.all(registrations.map((registration) => registration.unregister()))
+              )
+            );
+          }
+
+          if ('caches' in window) {
+            cleanupTasks.push(
+              caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+            );
+          }
+
+          Promise.allSettled(cleanupTasks).finally(() => {
+            window.location.replace(`/?asset-recovery=${Date.now()}`);
+          });
+        }, true);
+      })();
+    </script>
 
     <!-- JSON-LD 结构化数据:帮助搜索引擎识别 -->
     <script type="application/ld+json">

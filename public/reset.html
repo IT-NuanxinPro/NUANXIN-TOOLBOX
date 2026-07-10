@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>正在刷新暖心工作箱</title>
+  </head>
+  <body>
+    <p>正在清理旧版本缓存...</p>
+    <script>
+      const cleanupTasks = [];
+
+      if ('serviceWorker' in navigator) {
+        cleanupTasks.push(
+          navigator.serviceWorker.getRegistrations().then((registrations) =>
+            Promise.all(registrations.map((registration) => registration.unregister()))
+          )
+        );
+      }
+
+      if ('caches' in window) {
+        cleanupTasks.push(
+          caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+        );
+      }
+
+      Promise.allSettled(cleanupTasks).finally(() => {
+        window.location.replace(`/?cache-reset=${Date.now()}`);
+      });
+    </script>
+  </body>
+</html>
