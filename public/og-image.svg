@@ -22,7 +22,7 @@
   <text x="120" y="135" font-family="system-ui, sans-serif" font-size="40" font-weight="900" fill="white" text-anchor="middle">暖</text>
 
   <!-- Title -->
-  <text x="180" y="120" font-family="system-ui, sans-serif" font-size="36" font-weight="900" fill="white">暖心工作箱</text>
+  <text x="180" y="120" font-family="system-ui, sans-serif" font-size="36" font-weight="900" fill="white">暖心工具箱</text>
   <rect x="180" y="135" width="60" height="24" rx="12" fill="white" opacity="0.15"/>
   <text x="210" y="152" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="white" text-anchor="middle" opacity="0.9">v1.0</text>
 

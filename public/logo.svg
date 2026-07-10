@@ -24,6 +24,6 @@
   <path d="M260 305 L235 355" stroke="#000" stroke-width="12" stroke-linecap="round"/>
 
   <!-- text -->
-  <text x="256" y="430" text-anchor="middle" font-size="46" font-weight="900" font-family="Microsoft YaHei,Arial" fill="#fff">暖心工作箱</text>
+  <text x="256" y="430" text-anchor="middle" font-size="46" font-weight="900" font-family="Microsoft YaHei,Arial" fill="#fff">暖心工具箱</text>
   <text x="256" y="470" text-anchor="middle" font-size="18" letter-spacing="7" font-family="Arial" fill="#aaa">NUANXIN TOOLBOX</text>
 </svg>
