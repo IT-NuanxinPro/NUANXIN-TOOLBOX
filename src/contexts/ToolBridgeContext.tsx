@@ -24,8 +24,8 @@ export const toolBridge = {
   },
 
   // 消费待传递的数据(目标工具调用)
-  consumeTransfer(): string | null {
-    if (!pendingTransfer) return null;
+  consumeTransfer(toolId?: string): string | null {
+    if (!pendingTransfer || (toolId && pendingTransfer.toolId !== toolId)) return null;
     const data = pendingTransfer.data;
     pendingTransfer = null;
     return data;

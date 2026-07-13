@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Icon } from './Icon';
-import { TOOL_REGISTRY, CATEGORIES } from '../registry';
+import { TOOL_REGISTRY, getCategoryName } from '../registry';
 import { ToolRegistryItem } from '../types';
 
 interface CommandPaletteProps {
@@ -47,7 +47,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       subtitle: t.description,
       icon: t.icon,
       toolId: t.id,
-      keywords: [t.title, ...t.keywords, t.category],
+      keywords: [t.title, ...t.keywords, t.category, getCategoryName(t.category)],
       group: '工具',
     }));
     return toolCmds;

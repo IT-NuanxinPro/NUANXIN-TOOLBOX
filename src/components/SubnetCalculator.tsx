@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from './Icon';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 interface SubnetCalculatorProps {
   onRecordUsage: () => void;
@@ -20,6 +21,13 @@ export const SubnetCalculator: React.FC<SubnetCalculatorProps> = ({ onRecordUsag
     binaryMask: string;
   } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('subnet-calculator');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setCidr(pendingTransfer.data);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   useEffect(() => {
     calculateSubnet();

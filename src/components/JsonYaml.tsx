@@ -25,7 +25,7 @@ export const JsonYaml: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
   const [indentSize, setIndentSize] = useState<string>('2');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
-  const { pendingTransfer, consumeTransfer } = useToolBridge();
+  const { pendingTransfer, consumeTransfer } = useToolBridge('json-yaml');
 
   // 接收来自其他工具的数据
   useEffect(() => {

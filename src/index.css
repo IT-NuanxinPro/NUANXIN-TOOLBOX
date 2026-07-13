@@ -1,6 +1,58 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* ===== 大屏适配 =====
+ * 高分辨率桌面端适度放大 rem 尺寸，避免 2.5K / 4K 屏幕上的文字和控件过小。
+ * 页面容器保持流式增长，并通过上限避免内容在超宽屏上过度拉伸。
+ */
+@media (min-width: 1536px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 2200px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 3200px) {
+  html {
+    font-size: 20px;
+  }
+}
+
+.app-content-shell {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+@media (min-width: 1440px) {
+  .app-content-shell {
+    max-width: 96rem;
+  }
+}
+
+@media (min-width: 1920px) {
+  .app-content-shell {
+    max-width: 120rem;
+  }
+}
+
+@media (min-width: 2560px) {
+  .app-content-shell {
+    max-width: 144rem;
+  }
+}
+
+@media (min-width: 3200px) {
+  .app-content-shell {
+    max-width: 160rem;
+  }
+}
+
 /* ===== 暗黑模式:基于 .dark 类的 CSS 覆盖 ===== */
 html.dark {
   color-scheme: dark;
@@ -97,6 +149,80 @@ select,
 
 /* ===== 动画系统 ===== */
 
+/* AI 悬浮入口:轻微漂浮、光晕和图标呼吸 */
+@keyframes ai-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes ai-ring {
+  0% { opacity: 0.32; transform: scale(0.88); }
+  70%, 100% { opacity: 0; transform: scale(1.32); }
+}
+
+@keyframes ai-icon-breathe {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(8deg) scale(1.12); }
+}
+
+.ai-fab {
+  position: relative;
+  isolation: isolate;
+  animation: ai-float 3.2s ease-in-out infinite;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+.ai-fab::before {
+  position: absolute;
+  z-index: -1;
+  inset: -5px;
+  content: '';
+  border: 1px solid rgba(15, 23, 42, 0.28);
+  border-radius: 999px;
+  animation: ai-ring 2.4s ease-out infinite;
+}
+
+.ai-fab-icon {
+  animation: ai-icon-breathe 2.8s ease-in-out infinite;
+}
+
+.ai-fab:hover {
+  animation-play-state: paused;
+}
+
+.ai-fab:active {
+  animation: none;
+  transform: scale(0.96);
+}
+
+/* 工作台首屏使用柔和的浅色层次，让粘贴区成为同一视觉系统的一部分 */
+.workbench-hero {
+  color: #0f172a;
+  border: 1px solid #dbe3ee;
+  background:
+    radial-gradient(circle at 86% 14%, rgba(199, 210, 254, 0.5), transparent 30%),
+    linear-gradient(135deg, #f8fafc 0%, #ffffff 52%, #eef2ff 100%);
+}
+
+.workbench-paste-panel {
+  border: 1px solid rgba(203, 213, 225, 0.82);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(18px);
+}
+
+html.dark .workbench-hero {
+  border-color: #334155;
+  background:
+    radial-gradient(circle at 86% 14%, rgba(79, 70, 229, 0.22), transparent 30%),
+    linear-gradient(135deg, #111827 0%, #0f172a 58%, #172033 100%);
+}
+
+html.dark .workbench-paste-panel {
+  border-color: rgba(71, 85, 105, 0.85);
+  background: rgba(15, 23, 42, 0.72);
+}
+
 /* 淡入 + 上移 */
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(12px); }
@@ -164,6 +290,42 @@ select,
 .tool-card {
   content-visibility: auto;
   contain-intrinsic-size: 220px;
+}
+
+.dashboard-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .dashboard-tool-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-tool-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1536px) {
+  .dashboard-tool-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 2200px) {
+  .dashboard-tool-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 3200px) {
+  .dashboard-tool-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

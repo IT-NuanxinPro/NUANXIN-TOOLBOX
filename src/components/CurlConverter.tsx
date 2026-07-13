@@ -1,59 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
+import { useToolBridge } from '../hooks/useToolBridge';
+import { parseCurlCommand as parseCurl, type ParsedCurl } from '../utils/curlParser';
 
 const DEMO_CURL = `curl -X POST 'https://api.example.com/v1/users' \\
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.xxx' \\
   -d '{"name":"暖心","role":"admin","skills":["react","node"]}'`;
-
-// 解析 curl 命令
-interface ParsedCurl {
-  url: string;
-  method: string;
-  headers: Record<string, string>;
-  body: string;
-}
-
-const parseCurl = (raw: string): ParsedCurl => {
-  // 规范化:合并续行,去头
-  const lines = raw.replace(/\\\s*\n\s*/g, ' ').split('\n');
-  const joined = lines.join(' ').trim();
-
-  // 提取 URL:支持 -X 'URL' / --url 'URL' / 直接 URL / -X URL
-  const urlMatch =
-    joined.match(/(?:curl\s+(?:-[^\s]+\s+(?:'[^']*'|"[^"]*"|\S+)\s+)*)['"]?(https?:\/\/[^\s'"]+)['"]?/) ||
-    joined.match(/--url\s+['"]?([^\s'"]+)['"]?/) ||
-    joined.match(/curl\s+['"]?(https?:\/\/[^\s'"]+)['"]?/);
-
-  const url = urlMatch ? urlMatch[1] : '';
-
-  // 方法
-  let method = 'GET';
-  const methodMatch = joined.match(/-X\s+(\w+)/) || joined.match(/--request\s+(\w+)/);
-  if (methodMatch) method = methodMatch[1].toUpperCase();
-
-  // headers
-  const headers: Record<string, string> = {};
-  const headerRegex = /(?:-H|--header)\s+['"]([^'"]+)['"]/g;
-  let m;
-  while ((m = headerRegex.exec(joined)) !== null) {
-    const [k, ...rest] = m[1].split(':');
-    headers[k.trim()] = rest.join(':').trim();
-  }
-
-  // body
-  let body = '';
-  const bodyMatch =
-    joined.match(/(?:-d|--data|--data-raw)\s+['"]([\s\S]+?)['"]/) ||
-    joined.match(/(?:-d|--data|--data-raw)\s+(\S+)/);
-  if (bodyMatch) {
-    body = bodyMatch[1];
-    if (method === 'GET') method = 'POST';
-  }
-
-  return { url, method, headers, body };
-};
 
 const toFetch = (c: ParsedCurl): string => {
   const opts: string[] = [];
@@ -166,6 +120,13 @@ export const CurlConverter: React.FC<ToolComponentProps> = ({ onRecordUsage }) =
   const [output, setOutput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('curl-converter');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setInput(pendingTransfer.data);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   const handleConvert = () => {
     if (!input.trim()) {

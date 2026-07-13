@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { Icon } from './Icon';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 interface QrCodeGeneratorProps {
   onRecordUsage: () => void;
@@ -16,6 +17,13 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({ onRecordUsage 
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('qrcode-gen');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setText(pendingTransfer.data);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   useEffect(() => {
     generateQrCode();

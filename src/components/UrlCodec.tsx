@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from './Icon';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 interface UrlCodecProps {
   onRecordUsage: () => void;
@@ -10,6 +11,13 @@ export const UrlCodec: React.FC<UrlCodecProps> = ({ onRecordUsage }) => {
   const [outputText, setOutputText] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [parsedParams, setParsedParams] = useState<Array<{ key: string; value: string }>>([]);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('url-codec');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setInputText(pendingTransfer.data);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   const handleEncode = (mode: 'all' | 'component') => {
     onRecordUsage();

@@ -3,6 +3,28 @@ import { Icon } from './Icon';
 import { useToolBridge } from '../hooks/useToolBridge';
 import { ToolComponentProps } from '../types';
 
+const looksLikeBase64Text = (value: string) => {
+  const compactValue = value.replace(/\s/g, '');
+  return compactValue.length >= 20
+    && compactValue.length % 4 === 0
+    && /^[A-Za-z0-9+/]+={0,2}$/.test(compactValue);
+};
+
+const transformText = (value: string, mode: 'encode' | 'decode') => {
+  if (mode === 'encode') {
+    const utf8Bytes = new TextEncoder().encode(value);
+    let binaryString = '';
+    utf8Bytes.forEach((byte) => {
+      binaryString += String.fromCharCode(byte);
+    });
+    return btoa(binaryString);
+  }
+
+  const binary = atob(value.replace(/\s/g, ''));
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+};
+
 export const Base64Codec: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
   const [activeTab, setActiveTab] = useState<'text' | 'image'>('text');
 
@@ -14,15 +36,24 @@ export const Base64Codec: React.FC<ToolComponentProps> = ({ onRecordUsage }) => 
 
   // Image Mode state
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const { pendingTransfer, consumeTransfer } = useToolBridge();
+  const { pendingTransfer, consumeTransfer } = useToolBridge('base64');
 
   // 接收来自其他工具的数据
   useEffect(() => {
-    if (pendingTransfer) {
-      setTextInput(pendingTransfer.data);
-      setTextMode('encode');
-      consumeTransfer();
+    if (!pendingTransfer) return;
+
+    const nextMode = looksLikeBase64Text(pendingTransfer.data) ? 'decode' : 'encode';
+    setActiveTab('text');
+    setTextInput(pendingTransfer.data);
+    setTextMode(nextMode);
+    try {
+      setTextOutput(transformText(pendingTransfer.data, nextMode));
+      setTextError(null);
+    } catch {
+      setTextOutput('');
+      setTextError('传入内容无法按 Base64 文本解码，请检查数据是否完整。');
     }
+    consumeTransfer();
   }, [pendingTransfer, consumeTransfer]);
   const [imageBase64, setImageBase64] = useState<string>('');
   const [imageError, setImageError] = useState<string | null>(null);
@@ -41,28 +72,8 @@ export const Base64Codec: React.FC<ToolComponentProps> = ({ onRecordUsage }) => 
     }
 
     try {
-      if (mode === 'encode') {
-        // Safe utf-8 base64 encoding
-        const utf8Bytes = new TextEncoder().encode(inputVal);
-        let binaryString = '';
-        utf8Bytes.forEach((b) => {
-          binaryString += String.fromCharCode(b);
-        });
-        const encoded = btoa(binaryString);
-        setTextOutput(encoded);
-        setTextError(null);
-      } else {
-        // Safe utf-8 base64 decoding
-        const decodedBinary = btoa(atob(inputVal)); // simple verification
-        const binary = atob(inputVal);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-        const decoded = new TextDecoder().decode(bytes);
-        setTextOutput(decoded);
-        setTextError(null);
-      }
+      setTextOutput(transformText(inputVal, mode));
+      setTextError(null);
       onRecordUsage();
     } catch (err: any) {
       setTextError(`Base64 ${mode === 'encode' ? '编码' : '解码'}失败：请确认数据格式合法 (例如解码时需提供合法的 Base64 字符组)`);

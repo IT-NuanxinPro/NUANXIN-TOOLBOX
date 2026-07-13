@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from './Icon';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 interface DiffItem {
   type: 'added' | 'removed' | 'unchanged';
@@ -39,6 +40,7 @@ export const CodeDiffEditor: React.FC<CodeDiffEditorProps> = ({ onRecordUsage })
   const rightScrollRef = useRef<HTMLDivElement>(null);
   const isSyncingLeftScroll = useRef<boolean>(false);
   const isSyncingRightScroll = useRef<boolean>(false);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('code-diff');
 
   const PRESETS = [
     {
@@ -138,6 +140,12 @@ export const CodeDiffEditor: React.FC<CodeDiffEditorProps> = ({ onRecordUsage })
     setOriginalText(PRESETS[0].original);
     setModifiedText(PRESETS[0].modified);
   }, []);
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setOriginalText(pendingTransfer.data);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   // Compute diff when texts or settings change
   useEffect(() => {

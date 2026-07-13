@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import MarkdownIt from 'markdown-it';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 // 初始化 markdown-it,并自定义 mermaid 代码块的 fence 渲染
 const md = new MarkdownIt({ html: false, breaks: true });
@@ -35,6 +36,14 @@ export const TextEditor: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
   );
   const [activeTab, setActiveTab] = useState<'raw' | 'markdown'>('markdown');
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('text-editor');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setText(pendingTransfer.data);
+    setActiveTab('raw');
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   // Compute text telemetry stats
   const lineCount = text === '' ? 0 : text.split('\n').length;

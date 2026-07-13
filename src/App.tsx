@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { TOOL_REGISTRY, TOOL_BY_ID, isKnownToolId } from './registry';
 import { CommandPalette } from './components/CommandPalette';
 import { ToolPicker } from './components/ToolPicker';
@@ -14,6 +14,10 @@ const getToolIdFromHash = () => {
   const id = window.location.hash.replace(/^#\/?/, '').trim();
   return isKnownToolId(id) ? id : null;
 };
+
+const AIAssistant = lazy(() =>
+  import('./components/ai/AIAssistant').then((module) => ({ default: module.AIAssistant }))
+);
 
 export default function App() {
   return <AppContent />;
@@ -134,7 +138,7 @@ function AppContent() {
         tool.description.toLowerCase().includes(normalizedSearch) ||
         tool.keywords.some((k) => k.toLowerCase().includes(normalizedSearch));
 
-      const matchesCategory = activeCategory === 'all' || tool.category === activeCategory;
+      const matchesCategory = normalizedSearch !== '' || activeCategory === 'all' || tool.category === activeCategory;
 
       return matchesSearch && matchesCategory;
     });
@@ -177,12 +181,15 @@ function AppContent() {
               activeToolId={activeToolId}
               favorites={favorites}
               filteredTools={filteredTools}
+              isSearching={normalizedSearch !== ''}
+              recent={recents}
               usageStats={usageStats}
               onLaunchTool={launchTool}
               onResetFilters={() => {
                 setSearchQuery('');
                 setActiveCategory('all');
               }}
+              onSelectCategory={setActiveCategory}
               onToggleFavorite={toggleFavorite}
             />
           ) : (
@@ -208,6 +215,10 @@ function AppContent() {
       />
 
       <ToolPicker currentToolId={activeToolId || undefined} onSelect={handlePickerSelect} />
+
+      <Suspense fallback={null}>
+        <AIAssistant activeToolItem={activeToolItem} onLaunchTool={launchTool} />
+      </Suspense>
     </div>
   );
 }

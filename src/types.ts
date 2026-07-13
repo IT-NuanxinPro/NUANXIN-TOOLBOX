@@ -1,4 +1,11 @@
-export type ToolCategory = 'image' | 'dev' | 'crypto' | 'text' | 'ops';
+export type ToolCategory =
+  | 'data'
+  | 'api'
+  | 'frontend'
+  | 'assets'
+  | 'security'
+  | 'text'
+  | 'ops';
 
 export type UserRole = 'developer' | 'tester' | 'designer' | 'ops';
 

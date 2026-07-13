@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from './Icon';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 interface CronParserProps {
   onRecordUsage: () => void;
@@ -10,6 +11,13 @@ export const CronParser: React.FC<CronParserProps> = ({ onRecordUsage }) => {
   const [explanation, setExplanation] = useState<string>('');
   const [nextRunTimes, setNextRunTimes] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('cron-parser');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setCronExpression(pendingTransfer.data);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   useEffect(() => {
     parseCron();

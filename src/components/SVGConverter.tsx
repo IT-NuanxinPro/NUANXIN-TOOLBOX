@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 const DEMO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
   <defs>
@@ -50,8 +51,15 @@ export const SVGConverter: React.FC<ToolComponentProps> = ({ onRecordUsage }) =>
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [hasSanitizedScripts, setHasSanitizedScripts] = useState<boolean>(false);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('svg-converter');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setSvgCode(pendingTransfer.data);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   // Parse SVG dimensions when code changes
   useEffect(() => {

@@ -126,7 +126,7 @@ export const JsonToTs: React.FC<ToolComponentProps> = ({ onRecordUsage }) => {
   const [rootName, setRootName] = useState('RootObject');
   const [error, setError] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
-  const { pendingTransfer, consumeTransfer } = useToolBridge();
+  const { pendingTransfer, consumeTransfer } = useToolBridge('json-to-ts');
 
   // 接收来自其他工具的数据
   useEffect(() => {

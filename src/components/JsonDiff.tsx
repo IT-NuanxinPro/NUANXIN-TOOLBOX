@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from './Icon';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 interface JsonDiffProps {
   onRecordUsage: () => void;
@@ -11,6 +12,16 @@ export const JsonDiff: React.FC<JsonDiffProps> = ({ onRecordUsage }) => {
   const [diffResults, setDiffResults] = useState<Array<{ path: string; type: 'add' | 'remove' | 'update'; leftVal: string; rightVal: string }>>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSame, setIsSame] = useState<boolean | null>(null);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('json-diff');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setJsonLeft(pendingTransfer.data);
+    setDiffResults([]);
+    setErrorMessage(null);
+    setIsSame(null);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   const handleCompare = () => {
     onRecordUsage();

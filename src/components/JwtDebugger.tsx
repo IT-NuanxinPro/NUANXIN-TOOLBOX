@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { SendToToolButton } from './SendToToolButton';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 interface JwtDebuggerProps {
   onRecordUsage: () => void;
@@ -17,6 +18,7 @@ export const JwtDebugger: React.FC<JwtDebuggerProps> = ({ onRecordUsage }) => {
     expTime?: string;
     iatTime?: string;
   }>({ status: 'none', message: '' });
+  const { pendingTransfer, consumeTransfer } = useToolBridge('jwt-debugger');
 
   const handleDecode = (jwtStr: string) => {
     onRecordUsage();
@@ -103,6 +105,12 @@ export const JwtDebugger: React.FC<JwtDebuggerProps> = ({ onRecordUsage }) => {
       });
     }
   };
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    handleDecode(pendingTransfer.data);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   // Sample Token for Testing
   const handleLoadSample = () => {

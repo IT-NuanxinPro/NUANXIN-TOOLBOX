@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
+import { useToolBridge } from '../hooks/useToolBridge';
+import { parseCurlCommand } from '../utils/curlParser';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
 
@@ -32,6 +34,37 @@ export const HttpRequestTester: React.FC<ToolComponentProps> = ({ onRecordUsage 
   const [error, setError] = useState<string | null>(null);
   const [activeRespTab, setActiveRespTab] = useState<'body' | 'headers' | 'status'>('body');
   const [isCopied, setIsCopied] = useState(false);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('http-request-tester');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+
+    const parsed = parseCurlCommand(pendingTransfer.data);
+    if (parsed.url) {
+      setUrl(parsed.url);
+      setMethod(METHODS.includes(parsed.method as Method) ? parsed.method as Method : 'GET');
+      setHeaders(Object.entries(parsed.headers).map(([key, value], index) => ({
+        id: `curl-header-${index}`,
+        key,
+        value,
+        enabled: true,
+      })));
+      setBody(parsed.body);
+
+      const contentType = Object.entries(parsed.headers)
+        .find(([key]) => key.toLowerCase() === 'content-type')?.[1]
+        .toLowerCase() || '';
+      if (contentType.includes('json')) setBodyType('json');
+      else if (contentType.includes('application/x-www-form-urlencoded')) setBodyType('form');
+      else setBodyType('text');
+
+      setError(null);
+      setResponse(null);
+    } else {
+      setError('无法从传入内容中解析出请求 URL，请检查 cURL 命令格式。');
+    }
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   const addHeader = () => {
     setHeaders([...headers, { id: `h${Date.now()}`, key: '', value: '', enabled: true }]);

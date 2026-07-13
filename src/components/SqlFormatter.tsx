@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 const DEMO_SQL = `select u.id, u.name, u.email, count(o.id) as order_count from users u left join orders o on o.user_id = u.id where u.status = 'active' and u.created_at > '2025-01-01' group by u.id, u.name, u.email having count(o.id) > 5 order by order_count desc limit 20;`;
 
@@ -27,6 +28,15 @@ export const SqlFormatter: React.FC<ToolComponentProps> = ({ onRecordUsage }) =>
   const [error, setError] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [processingAction, setProcessingAction] = useState<'format' | 'compress' | null>(null);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('sql-formatter');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setInput(pendingTransfer.data);
+    setOutput('');
+    setError(null);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   const handleFormat = async () => {
     if (!input.trim()) {

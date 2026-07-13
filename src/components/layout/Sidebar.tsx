@@ -56,10 +56,30 @@ export function Sidebar({
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-4">
+          <button
+            onClick={() => {
+              onSelectCategory('all');
+              if (activeToolId) onBackHome();
+            }}
+            className={`text-left text-xs px-3 py-2.5 rounded-lg font-bold flex items-center gap-2.5 transition-colors cursor-pointer ${
+              activeCategory === 'all'
+                ? 'bg-slate-900 text-white font-extrabold'
+                : 'text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <Icon name="Sparkles" size={14} />
+            <span className="flex-1">开发工作台</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+              activeCategory === 'all' ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-500'
+            }`}>
+              {CATEGORY_COUNTS.all}
+            </span>
+          </button>
+
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 block mb-1.5">工具分类</span>
             <nav className="flex flex-col gap-0.5">
-              {CATEGORIES.map((category) => {
+              {CATEGORIES.filter((category) => category.id !== 'all').map((category) => {
                 const count = CATEGORY_COUNTS[category.id] || 0;
 
                 return (
@@ -69,13 +89,14 @@ export function Sidebar({
                       onSelectCategory(category.id);
                       if (activeToolId) onBackHome();
                     }}
-                    className={`text-left text-xs px-3 py-2 rounded-md font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                    className={`text-left text-xs px-3 py-2 rounded-md font-bold flex items-center gap-2 transition-colors cursor-pointer ${
                       activeCategory === category.id
                         ? 'bg-slate-900 text-white font-extrabold'
                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
-                    <span className="truncate">{category.name}</span>
+                    <Icon name={category.icon} size={13} className="shrink-0" />
+                    <span className="truncate flex-1">{category.name}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                         activeCategory === category.id ? 'bg-slate-800 text-slate-100' : 'bg-slate-100 text-slate-500'

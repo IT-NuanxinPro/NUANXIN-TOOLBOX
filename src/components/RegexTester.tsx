@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from './Icon';
 import { ToolComponentProps } from '../types';
+import { useToolBridge } from '../hooks/useToolBridge';
 
 interface RegexTemplate {
   title: string;
@@ -64,6 +65,13 @@ export const RegexTester: React.FC<ToolComponentProps> = ({ onRecordUsage }) => 
   const [highlightedElement, setHighlightedElement] = useState<React.ReactNode[]>([]);
   const [codeLang, setCodeLang] = useState<'js' | 'python' | 'go'>('js');
   const [isCopied, setIsCopied] = useState(false);
+  const { pendingTransfer, consumeTransfer } = useToolBridge('regex');
+
+  useEffect(() => {
+    if (!pendingTransfer) return;
+    setTestText(pendingTransfer.data);
+    consumeTransfer();
+  }, [pendingTransfer, consumeTransfer]);
 
   // 生成各语言代码片段
   const codeSnippet = useMemo(() => {

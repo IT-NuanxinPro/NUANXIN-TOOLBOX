@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Icon } from './Icon';
-import { TOOL_REGISTRY } from '../registry';
+import { TOOL_REGISTRY, TOOL_TRANSFER_TARGET_IDS } from '../registry';
 import { toolBridge } from '../contexts/ToolBridgeContext';
 
 interface ToolPickerProps {
@@ -20,11 +20,16 @@ export const ToolPicker: React.FC<ToolPickerProps> = ({ currentToolId, onSelect 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     return TOOL_REGISTRY.filter(
-      (t) => t.id !== currentToolId && (t.title.toLowerCase().includes(q) || t.keywords.some((k) => k.toLowerCase().includes(q)))
+      (t) => TOOL_TRANSFER_TARGET_IDS.has(t.id)
+        && t.id !== currentToolId
+        && (t.title.toLowerCase().includes(q) || t.keywords.some((k) => k.toLowerCase().includes(q)))
     );
   }, [query, currentToolId]);
 
   const handleSelect = (toolId: string) => {
+    if (pickerState.data !== null) {
+      toolBridge.sendToTool(toolId, pickerState.data);
+    }
     onSelect(toolId);
     toolBridge.closePicker();
     setQuery('');
@@ -74,10 +79,11 @@ export const ToolPicker: React.FC<ToolPickerProps> = ({ currentToolId, onSelect 
                 <div className="px-4 py-8 text-center text-xs text-slate-400">没有匹配的工具</div>
               ) : (
                 filtered.map((t) => (
-                  <div
+                  <button
+                    type="button"
                     key={t.id}
                     onClick={() => handleSelect(t.id)}
-                    className="mx-2 px-3 py-2.5 rounded-lg cursor-pointer flex items-center gap-3 hover:bg-slate-100 transition-colors"
+                    className="w-[calc(100%_-_1rem)] mx-2 px-3 py-2.5 rounded-lg cursor-pointer flex items-center gap-3 hover:bg-slate-100 transition-colors text-left"
                   >
                     <span className="p-2 rounded-md bg-slate-100 text-slate-600">
                       <Icon name={t.icon} size={14} />
@@ -87,7 +93,7 @@ export const ToolPicker: React.FC<ToolPickerProps> = ({ currentToolId, onSelect 
                       <div className="text-[11px] text-slate-400 truncate">{t.description}</div>
                     </div>
                     <Icon name="ChevronRight" size={14} className="text-slate-300" />
-                  </div>
+                  </button>
                 ))
               )}
             </div>
